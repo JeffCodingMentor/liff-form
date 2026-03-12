@@ -8,14 +8,14 @@ exports.handler = async function (event, context) {
     }
 
     try {
-        // 從 Netlify 的環境變數中讀取 GAS 網址
-        const gasUrl = process.env.GAS_URL;
+        // 從 Netlify 的環境變數中讀取 GAS 網址，並去除可能的空白
+        const gasUrl = (process.env.GAS_URL || "").trim();
 
         if (!gasUrl) {
-            console.error("GAS_URL is not set in environment variables.");
+            console.error("GAS_URL is missing in environment variables.");
             return {
                 statusCode: 500,
-                body: JSON.stringify({ error: 'Server configuration error' })
+                body: JSON.stringify({ error: '系統設定錯誤：缺少 GAS_URL' })
             };
         }
 
@@ -28,19 +28,20 @@ exports.handler = async function (event, context) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(requestData)
+            body: JSON.stringify(requestData),
+            redirect: 'follow' // 明確要求追蹤轉址 (對 GAS 非常重要)
         });
 
         const resultText = await response.text();
 
         if (!response.ok) {
-            console.error(`GAS responded with status: ${response.status}. Body: ${resultText}`);
+            console.error(`GAS error: Status ${response.status}, Body: ${resultText}`);
             return {
-                statusCode: 502,
+                statusCode: 502, // Bad Gateway
                 body: JSON.stringify({ 
-                    error: 'Google Apps Script 傳回錯誤', 
+                    error: 'Google Apps Script 伺服器傳回錯誤', 
                     status: response.status,
-                    details: resultText 
+                    details: resultText.substring(0, 500) // 避免噴出太長的 HTML
                 })
             };
         }
@@ -49,20 +50,20 @@ exports.handler = async function (event, context) {
         try {
             resultData = JSON.parse(resultText);
         } catch(e) {
+            // 如果 GAS 傳回的不是 JSON (例如 HTML)，也把它包裝起來
             resultData = { message: resultText };
         }
 
-        // 回傳成功訊息給前端
         return {
             statusCode: 200,
             body: JSON.stringify({ success: true, data: resultData })
         };
 
     } catch (error) {
-        console.error("Error submitting to GAS:", error);
+        console.error("Proxy error:", error);
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: 'Failed to submit data' })
+            body: JSON.stringify({ error: '連線至 GAS 失敗', details: error.message })
         };
     }
 };
