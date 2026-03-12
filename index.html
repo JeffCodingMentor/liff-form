@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>報名資料填寫</title>
+    <style>
+        body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { width: 90%; max-width: 380px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
+        h2 { color: #00b900; text-align: center; margin-bottom: 25px; font-weight: bold; }
+        .input-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #444; font-size: 14px; }
+        input { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 16px; box-sizing: border-box; transition: 0.3s; }
+        input:focus { border-color: #00b900; outline: none; box-shadow: 0 0 0 3px rgba(0,185,0,0.1); }
+        button { width: 100%; padding: 15px; background-color: #00b900; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        button:hover { background-color: #009900; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        #status { font-size: 12px; color: #999; text-align: center; margin-top: 15px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>報名登記</h2>
+    <div class="input-group">
+        <label>您的姓名</label>
+        <input type="text" id="userName" placeholder="請輸入中文姓名">
+    </div>
+    <div class="input-group">
+        <label>您的生日</label>
+        <input type="date" id="userBirthday">
+    </div>
+    <button id="submitBtn">確認並前往聊天室</button>
+    <div id="status">正在連接 LINE...</div>
+</div>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
