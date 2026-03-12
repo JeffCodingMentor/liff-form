@@ -20,16 +20,29 @@
 </head>
 <body>
 <div class="container">
-    <h2>報名登記</h2>
-    <div class="input-group">
-        <label>您的姓名</label>
-        <input type="text" id="userName" placeholder="請輸入中文姓名">
+    <div id="loadingArea">
+        <h2>正在載入中...</h2>
     </div>
-    <div class="input-group">
-        <label>您的生日</label>
-        <input type="date" id="userBirthday">
+
+    <div id="registrationForm" style="display: none;">
+        <h2>報名登記</h2>
+        <div class="input-group">
+            <label>您的姓名</label>
+            <input type="text" id="userName" placeholder="請輸入中文姓名">
+        </div>
+        <div class="input-group">
+            <label>您的生日</label>
+            <input type="date" id="userBirthday">
+        </div>
+        <button id="submitBtn">確認並前往聊天室</button>
     </div>
-    <button id="submitBtn">確認並前往聊天室</button>
+
+    <div id="welcomeMessage" style="display: none; text-align: center;">
+        <h2>歡迎回來！</h2>
+        <p>您已經完成報名登記囉。</p>
+        <button id="chatBtn">前往聊天室</button>
+    </div>
+
     <div id="status">正在連接 LINE...</div>
 </div>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>

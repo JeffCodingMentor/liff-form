@@ -1,33 +1,56 @@
 function doPost(e) {
   try {
-    // 解析前端傳來的 JSON 資料
     var data = JSON.parse(e.postData.contents);
-    
-    var name = data.name || '';
-    var birthday = data.birthday || '';
-    var lineId = data.userId || '';
-    var displayName = data.displayName || '';
-    
-    // 取得目前作用中的試算表與工作表
+    var action = data.action; // 'check' or 'submit'
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     
-    // 取得當下時間
-    var timestamp = new Date();
+    // 1. 檢查使用者是否存在
+    if (action === 'check') {
+      var userIdToCheck = data.userId;
+      if (!userIdToCheck) {
+        throw new Error("Missing userId for check");
+      }
+      
+      // 取得第 5 欄 (userId) 的所有資料 (從第一列開始，假設資料不多)
+      var lastRow = sheet.getLastRow();
+      if (lastRow < 1) {
+        return createResponse({ exists: false });
+      }
+      
+      var columnE = sheet.getRange(1, 5, lastRow, 1).getValues();
+      var exists = false;
+      
+      for (var i = 0; i < columnE.length; i++) {
+        if (columnE[i][0] === userIdToCheck) {
+          exists = true;
+          break;
+        }
+      }
+      
+      return createResponse({ exists: exists });
+    }
     
-    // 寫入一行新資料：將依序存入第一欄到第五欄
-    sheet.appendRow([timestamp, name, birthday, displayName, lineId]);
+    // 2. 報名註冊
+    if (action === 'submit') {
+      var name = data.name || '';
+      var birthday = data.birthday || '';
+      var lineId = data.userId || '';
+      var displayName = data.displayName || '';
+      var timestamp = new Date();
+      
+      sheet.appendRow([timestamp, name, birthday, displayName, lineId]);
+      
+      return createResponse({ status: "success", message: "資料寫入成功" });
+    }
     
-    // 回傳成功訊息
-    return ContentService.createTextOutput(JSON.stringify({
-      "status": "success",
-      "message": "資料寫入成功"
-    })).setMimeType(ContentService.MimeType.JSON);
+    throw new Error("Invalid action: " + action);
     
   } catch (error) {
-    // 處理錯誤
-    return ContentService.createTextOutput(JSON.stringify({
-      "status": "error",
-      "message": error.toString()
-    })).setMimeType(ContentService.MimeType.JSON);
+    return createResponse({ status: "error", message: error.toString() });
   }
+}
+
+function createResponse(payload) {
+  return ContentService.createTextOutput(JSON.stringify(payload))
+    .setMimeType(ContentService.MimeType.JSON);
 }

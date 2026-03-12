@@ -7,12 +7,59 @@ async function init() {
         if (!liff.isLoggedIn()) {
             liff.login();
         } else {
-            document.getElementById('status').innerText = '準備就緒，請填寫資料';
+            document.getElementById('status').innerText = '正在檢查報名狀態...';
+            
+            // 取得使用者 Profile 並檢查是否已註冊
+            const profile = await liff.getProfile();
+            const exists = await checkUserExists(profile.userId);
+            
+            document.getElementById('loadingArea').style.display = 'none';
+            
+            if (exists) {
+                document.getElementById('welcomeMessage').style.display = 'block';
+                document.getElementById('status').innerText = '歡迎回來';
+            } else {
+                document.getElementById('registrationForm').style.display = 'block';
+                document.getElementById('status').innerText = '準備就緒，請填寫資料';
+            }
         }
     } catch (e) {
         document.getElementById('status').innerText = 'LIFF 初始化失敗';
     }
 }
+
+async function checkUserExists(userId) {
+    try {
+        const response = await fetch('/.netlify/functions/submit-form', {
+            method: 'POST',
+            body: JSON.stringify({
+                action: 'check',
+                userId: userId
+            })
+        });
+        const resData = await response.json();
+        return resData.data && resData.data.exists;
+    } catch (err) {
+        console.error("Check user failed:", err);
+        return false;
+    }
+}
+
+// 跳轉聊天室共用邏輯
+function redirectToOA() {
+    const redirectUrl = `https://line.me/R/ti/p/${oaId}`;
+    liff.openWindow({
+        url: redirectUrl,
+        external: false
+    });
+    setTimeout(() => {
+        liff.closeWindow();
+    }, 500);
+}
+
+document.getElementById('chatBtn').addEventListener('click', () => {
+    redirectToOA();
+});
 
 document.getElementById('submitBtn').addEventListener('click', async () => {
     const inputName = document.getElementById('userName').value;
@@ -28,13 +75,13 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     btn.innerText = '處理中...';
 
     try {
-        // 取得使用者 Profile 資料
         const profile = await liff.getProfile();
         
         // 傳送資料到 Netlify Function
         const response = await fetch('/.netlify/functions/submit-form', {
             method: 'POST',
             body: JSON.stringify({
+                action: 'submit',
                 name: inputName,
                 birthday: birthday,
                 userId: profile.userId,
@@ -46,19 +93,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
             throw new Error('伺服器錯誤，寫入資料失敗');
         }
 
-        // 建立跳轉網址
-        const redirectUrl = `https://line.me/R/ti/p/${oaId}`;
-
-        // 執行跳轉
-        liff.openWindow({
-            url: redirectUrl,
-            external: false
-        });
-
-        // 延遲關閉視窗，確保跳轉已觸發
-        setTimeout(() => {
-            liff.closeWindow();
-        }, 500);
+        redirectToOA();
 
     } catch (err) {
         alert('發生錯誤: ' + err);
