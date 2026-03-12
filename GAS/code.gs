@@ -11,23 +11,27 @@ function doPost(e) {
         throw new Error("Missing userId for check");
       }
       
-      // 取得第 5 欄 (userId) 的所有資料 (從第一列開始，假設資料不多)
+      // 取得所有資料 (從第 1 欄到第 5 欄)
       var lastRow = sheet.getLastRow();
       if (lastRow < 1) {
         return createResponse({ exists: false });
       }
       
-      var columnE = sheet.getRange(1, 5, lastRow, 1).getValues();
+      var dataRange = sheet.getRange(1, 1, lastRow, 5).getValues();
       var exists = false;
+      var registeredName = "";
       
-      for (var i = 0; i < columnE.length; i++) {
-        if (columnE[i][0] === userIdToCheck) {
+      for (var i = 0; i < dataRange.length; i++) {
+        // 第 5 欄 (Index 4) 是 userId
+        if (dataRange[i][4] === userIdToCheck) {
           exists = true;
+          // 第 2 欄 (Index 1) 是姓名
+          registeredName = dataRange[i][1];
           break;
         }
       }
       
-      return createResponse({ exists: exists });
+      return createResponse({ exists: exists, name: registeredName });
     }
     
     // 2. 報名註冊

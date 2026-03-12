@@ -11,11 +11,12 @@ async function init() {
             
             // 取得使用者 Profile 並檢查是否已註冊
             const profile = await liff.getProfile();
-            const exists = await checkUserExists(profile.userId);
+            const userData = await checkUserExists(profile.userId);
             
             document.getElementById('loadingArea').style.display = 'none';
             
-            if (exists) {
+            if (userData && userData.exists) {
+                document.getElementById('regName').innerText = userData.name || '';
                 document.getElementById('welcomeMessage').style.display = 'block';
                 document.getElementById('status').innerText = '歡迎回來';
             } else {
@@ -38,10 +39,10 @@ async function checkUserExists(userId) {
             })
         });
         const resData = await response.json();
-        return resData.data && resData.data.exists;
+        return resData.data; // 回傳 { exists: true, name: "..." }
     } catch (err) {
         console.error("Check user failed:", err);
-        return false;
+        return { exists: false };
     }
 }
 
