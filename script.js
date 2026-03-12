@@ -31,6 +31,21 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
         // 取得使用者 Profile 資料
         const profile = await liff.getProfile();
         
+        // 傳送資料到 Netlify Function
+        const response = await fetch('/.netlify/functions/submit-form', {
+            method: 'POST',
+            body: JSON.stringify({
+                name: inputName,
+                birthday: birthday,
+                userId: profile.userId,
+                displayName: profile.displayName
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('伺服器錯誤，寫入資料失敗');
+        }
+
         // 建立跳轉網址
         const redirectUrl = `https://line.me/R/ti/p/${oaId}`;
 
