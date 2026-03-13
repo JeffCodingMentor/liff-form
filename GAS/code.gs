@@ -71,9 +71,9 @@ function doPost(e) {
       var targetFile = files.next();
       
       var recordSpreadsheet = SpreadsheetApp.openById(targetFile.getId());
-      var sheetRecord = recordSpreadsheet.getSheetByName("上課記錄");
+      var sheetRecord = recordSpreadsheet.getSheetByName("上課紀錄");
       if (!sheetRecord) {
-         return createResponse({ status: "success", records: [], message: "找不到上課記錄工作表" });
+         return createResponse({ status: "success", records: [], message: "找不到上課紀錄工作表" });
       }
       
       var sheetLastRow = sheetRecord.getLastRow();
