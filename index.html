@@ -45,8 +45,17 @@
         <div id="classRecordsContainer" style="margin-top: 20px; margin-bottom: 20px; text-align: left; background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #e0e0e0; display: none;">
             <h3 style="color: #333; margin-top: 0; margin-bottom: 10px; font-size: 16px;">本月上課記錄</h3>
             <div id="recordsLoading" style="font-size: 13px; color: #666;">讀取中...</div>
-            <ul id="recordsList" style="list-style-type: none; padding-left: 0; margin: 0; font-size: 14px; color: #555;">
-            </ul>
+            <div id="recordsEmptyMsg" style="font-size: 13px; color: #555; display: none;"></div>
+            <table id="recordsTable" style="width: 100%; border-collapse: collapse; font-size: 14px; color: #555; display: none;">
+                <thead>
+                    <tr>
+                        <th style="padding: 8px; border-bottom: 2px solid #ddd; text-align: left; width: 40%;">日期時間</th>
+                        <th style="padding: 8px; border-bottom: 2px solid #ddd; text-align: left; width: 60%;">上課內容</th>
+                    </tr>
+                </thead>
+                <tbody id="recordsTableBody">
+                </tbody>
+            </table>
         </div>
         
         <button id="chatBtn">前往聊天室</button>

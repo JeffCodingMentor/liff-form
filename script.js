@@ -56,7 +56,17 @@ async function fetchClassRecords(userName) {
     
     if (container) container.style.display = 'block';
     if (loading) loading.style.display = 'block';
-    if (list) list.innerHTML = '';
+    
+    // 清空現有表格內容 (只保留表頭)
+    const tbody = document.getElementById('recordsTableBody');
+    if (tbody) tbody.innerHTML = '';
+    
+    // 隱藏可能有的錯誤/無紀錄訊息
+    const emptyMsg = document.getElementById('recordsEmptyMsg');
+    if (emptyMsg) {
+        emptyMsg.style.display = 'none';
+        emptyMsg.innerText = '';
+    }
     
     try {
         const response = await fetch('/.netlify/functions/submit-form', {
@@ -73,37 +83,54 @@ async function fetchClassRecords(userName) {
         if (resData && resData.data && resData.data.records) {
             const records = resData.data.records;
             if (records.length > 0) {
+                // 有紀錄時，確保表格顯示
+                document.getElementById('recordsTable').style.display = 'table';
                 records.forEach(r => {
-                    const li = document.createElement('li');
-                    li.style.padding = '8px 0';
-                    li.style.borderBottom = '1px dashed #eee';
-                    li.innerText = `${r.date}：${r.colI} / ${r.colJ}`;
-                    list.appendChild(li);
+                    const tr = document.createElement('tr');
+                    
+                    const tdI = document.createElement('td');
+                    tdI.style.padding = '8px';
+                    tdI.style.borderBottom = '1px solid #eee';
+                    tdI.innerText = r.colI || '-';
+                    
+                    const tdJ = document.createElement('td');
+                    tdJ.style.padding = '8px';
+                    tdJ.style.borderBottom = '1px solid #eee';
+                    tdJ.innerText = r.colJ || '-';
+                    
+                    tr.appendChild(tdI);
+                    tr.appendChild(tdJ);
+                    if (tbody) tbody.appendChild(tr);
                 });
             } else {
                 // 沒有紀錄
-                const li = document.createElement('li');
-                li.style.padding = '8px 0';
-                li.innerText = '目前無這個月的上課記錄';
-                list.appendChild(li);
+                document.getElementById('recordsTable').style.display = 'none';
+                if (emptyMsg) {
+                    emptyMsg.style.display = 'block';
+                    emptyMsg.innerText = '目前無這個月的上課記錄';
+                }
             }
             
             // 顯示備註如果有的話
-            if (resData.data.message) {
-                 const msgLi = document.createElement('li');
-                 msgLi.style.fontSize = '12px';
-                 msgLi.style.color = '#999';
-                 msgLi.style.paddingTop = '8px';
-                 msgLi.innerText = `備註: ${resData.data.message}`;
-                 list.appendChild(msgLi);
+            if (resData.data.message && emptyMsg) {
+                 emptyMsg.style.display = 'block';
+                 emptyMsg.innerText += (emptyMsg.innerText ? '\n' : '') + `備註: ${resData.data.message}`;
             }
         } else {
-            list.innerHTML = '<li>無法讀取記錄，格式異常</li>';
+            document.getElementById('recordsTable') && (document.getElementById('recordsTable').style.display = 'none');
+            if (emptyMsg) {
+                emptyMsg.style.display = 'block';
+                emptyMsg.innerText = '無法讀取記錄，格式異常';
+            }
         }
     } catch (err) {
         console.error("Fetch records failed:", err);
         if (loading) loading.style.display = 'none';
-        if (list) list.innerHTML = '<li>讀取記錄失敗</li>';
+        document.getElementById('recordsTable') && (document.getElementById('recordsTable').style.display = 'none');
+        if (emptyMsg) {
+            emptyMsg.style.display = 'block';
+            emptyMsg.innerText = '讀取記錄失敗';
+        }
     }
 }
 

@@ -104,7 +104,6 @@ function doPost(e) {
              if (colI !== '' || colJ !== '') {
                // 依預設時區格式化輸出日期字串
                records.push({
-                 date: Utilities.formatDate(rowDate, Session.getScriptTimeZone(), "yyyy/MM/dd"), 
                  colI: colI.toString(), 
                  colJ: colJ.toString()
                });
