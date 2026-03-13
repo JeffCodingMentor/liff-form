@@ -40,6 +40,15 @@
     <div id="welcomeMessage" style="display: none; text-align: center;">
         <h2><span id="regName"></span> 歡迎回來！</h2>
         <p>您已經完成報名登記囉。</p>
+        
+        <!-- 上課紀錄區塊預設隱藏，若進入此區塊且讀取到資料則會顯示 -->
+        <div id="classRecordsContainer" style="margin-top: 20px; margin-bottom: 20px; text-align: left; background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #e0e0e0; display: none;">
+            <h3 style="color: #333; margin-top: 0; margin-bottom: 10px; font-size: 16px;">本月上課記錄</h3>
+            <div id="recordsLoading" style="font-size: 13px; color: #666;">讀取中...</div>
+            <ul id="recordsList" style="list-style-type: none; padding-left: 0; margin: 0; font-size: 14px; color: #555;">
+            </ul>
+        </div>
+        
         <button id="chatBtn">前往聊天室</button>
     </div>
 
