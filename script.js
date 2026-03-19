@@ -82,6 +82,7 @@ async function fetchClassRecords(userName) {
         
         if (resData && resData.data && resData.data.records) {
             const records = resData.data.records;
+            renderCalendar(records); // 繪製月曆
             if (records.length > 0) {
                 // 有紀錄時，確保表格顯示
                 document.getElementById('recordsTable').style.display = 'table';
@@ -132,6 +133,96 @@ async function fetchClassRecords(userName) {
             emptyMsg.innerText = '讀取記錄失敗';
         }
     }
+}
+
+function renderCalendar(records) {
+    const calendarEl = document.getElementById('calendar');
+    if (!calendarEl) return;
+    
+    if (!records || records.length === 0) {
+        calendarEl.style.display = 'none';
+        return;
+    }
+    
+    const classDates = new Set();
+    records.forEach(r => {
+        let rStr = r.colI || '';
+        let parsed = false;
+        
+        // 找 yyyy-mm-dd 或是 yyyy/mm/dd
+        let m = rStr.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+        if(m) {
+            classDates.add(m[1] + '-' + parseInt(m[2]) + '-' + parseInt(m[3]));
+            parsed = true;
+        }
+        if(!parsed) {
+            // 找 mm-dd 或是 mm/dd
+            m = rStr.match(/(?:^|[^\d])(\d{1,2})[-/](\d{1,2})(?:[^\d]|$)/);
+            if(m) {
+                let now = new Date();
+                classDates.add(now.getFullYear() + '-' + parseInt(m[1]) + '-' + parseInt(m[2]));
+                parsed = true;
+            }
+        }
+        if(!parsed) {
+            // 找 m月d日 或是 m月d號
+            m = rStr.match(/(\d{1,2})月(\d{1,2})[日號]/);
+            if(m) {
+                let now = new Date();
+                classDates.add(now.getFullYear() + '-' + parseInt(m[1]) + '-' + parseInt(m[2]));
+                parsed = true;
+            }
+        }
+    });
+
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    let html = `<div style="text-align: center; font-weight: bold; margin-bottom: 10px; color: #444;">${year}年${month + 1}月</div>`;
+    html += `<table style="width: 100%; text-align: center; border-collapse: collapse;">`;
+    html += `<thead><tr>`;
+    const days = ['日', '一', '二', '三', '四', '五', '六'];
+    days.forEach(d => html += `<th style="padding: 5px; font-weight: normal; color: #999; font-size: 13px;">${d}</th>`);
+    html += `</tr></thead><tbody><tr>`;
+    
+    for (let i = 0; i < firstDay.getDay(); i++) {
+        html += `<td></td>`;
+    }
+    
+    let currentDow = firstDay.getDay();
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+        const dateStr = year + '-' + (month + 1) + '-' + day;
+        const hasClass = classDates.has(dateStr);
+        // 上課日期標上不一樣的底色 (例如淺綠色代表有課)
+        const bg = hasClass ? '#e6f4ea' : 'transparent';
+        const color = hasClass ? '#137333' : '#444';
+        const fw = hasClass ? 'bold' : 'normal';
+        const br = hasClass ? '50%' : '0';
+        
+        html += `<td style="padding: 3px;">
+                    <div style="width: 26px; height: 26px; line-height: 26px; margin: 0 auto; background: ${bg}; color: ${color}; font-weight: ${fw}; border-radius: ${br}; font-size: 14px;">${day}</div>
+                 </td>`;
+                 
+        currentDow++;
+        if (currentDow > 6) {
+            html += `</tr><tr>`;
+            currentDow = 0;
+        }
+    }
+    
+    while (currentDow > 0 && currentDow <= 6) {
+        html += `<td></td>`;
+        currentDow++;
+    }
+    
+    html += `</tr></tbody></table>`;
+    
+    calendarEl.innerHTML = html;
+    calendarEl.style.display = 'block';
 }
 
 // 跳轉聊天室共用邏輯
