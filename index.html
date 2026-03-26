@@ -41,8 +41,14 @@
         <h2><span id="regName"></span> 歡迎回來！</h2>
         <p>您已經完成報名登記囉。</p>
         
+        <!-- 週期選擇 -->
+        <div id="cycleSelectorContainer" style="margin-top: 20px; margin-bottom: 15px; text-align: left; display: none;">
+            <label for="cycleSelector" style="display: block; font-weight: 600; color: #444; margin-bottom: 8px; font-size: 14px;">請選擇計費週期：</label>
+            <select id="cycleSelector" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 15px; outline: none; background: #fff;"></select>
+        </div>
+
         <!-- 上課紀錄區塊 -->
-        <div id="classRecordsContainer" style="margin-top: 20px; margin-bottom: 20px; text-align: left; background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #e0e0e0; display: none;">
+        <div id="classRecordsContainer" style="margin-top: 10px; margin-bottom: 20px; text-align: left; background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #e0e0e0; display: none;">
             <h3 style="color: #333; margin-top: 0; margin-bottom: 10px; font-size: 16px;">本月上課記錄</h3>
             <div id="calendar" style="margin-bottom: 15px; background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 10px; display: none;"></div>
             <div id="recordsLoading" style="font-size: 13px; color: #666;">讀取中...</div>
