@@ -380,7 +380,7 @@ function redirectToOA() {
 }
 
 document.getElementById('chatBtn').addEventListener('click', () => {
-    redirectToOA();
+    liff.closeWindow();
 });
 
 document.getElementById('submitBtn').addEventListener('click', async () => {
