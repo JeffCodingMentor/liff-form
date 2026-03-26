@@ -121,16 +121,24 @@
         </div>
 
         <div id="registrationForm" style="display: none;">
-            <h2>報名登記</h2>
+            <h2>系統登入</h2>
             <div class="input-group">
-                <label>您的姓名</label>
+                <label>學生姓名</label>
                 <input type="text" id="userName" placeholder="請輸入中文姓名">
             </div>
             <div class="input-group">
-                <label>您的生日</label>
+                <label>學生生日</label>
                 <input type="date" id="userBirthday">
             </div>
-            <button id="submitBtn">確認並前往聊天室</button>
+            <div class="input-group">
+                <label>所屬教室</label>
+                <select id="userClassroom" style="width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 16px; box-sizing: border-box; background: #fff; outline: none;">
+                    <option value="" disabled selected>請選擇教室</option>
+                    <option value="I">Im未來</option>
+                    <option value="J">Jeff Coding</option>
+                </select>
+            </div>
+            <button id="submitBtn">確認</button>
         </div>
 
         <div id="welcomeMessage" style="display: none; text-align: center;">

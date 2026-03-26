@@ -377,9 +377,10 @@ document.getElementById('chatBtn').addEventListener('click', () => {
 document.getElementById('submitBtn').addEventListener('click', async () => {
     const inputName = document.getElementById('userName').value;
     const birthday = document.getElementById('userBirthday').value;
+    const classroom = document.getElementById('userClassroom').value;
 
-    if (!inputName || !birthday) {
-        alert('請完整填寫姓名與生日！');
+    if (!inputName || !birthday || !classroom) {
+        alert('請完整填寫姓名、生日並選擇教室！');
         return;
     }
 
@@ -397,6 +398,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
                 action: 'submit',
                 name: inputName,
                 birthday: birthday,
+                classroom: classroom,
                 userId: profile.userId,
                 displayName: profile.displayName
             })

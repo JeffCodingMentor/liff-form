@@ -34,15 +34,17 @@ function doPost(e) {
       return createResponse({ exists: exists, name: registeredName });
     }
     
-    // 2. 報名註冊
+    // 2. 報名註冊 (系統登入)
     if (action === 'submit') {
       var name = data.name || '';
       var birthday = data.birthday || '';
+      var classroom = data.classroom || '';
       var lineId = data.userId || '';
       var displayName = data.displayName || '';
       var timestamp = new Date();
       
-      sheet.appendRow([timestamp, name, birthday, displayName, lineId]);
+      // 欄位順序: 時間戳記 | 姓名 | 生日 | 教室 | 顯示名稱 | LINE ID
+      sheet.appendRow([timestamp, name, birthday, classroom, displayName, lineId]);
       
       return createResponse({ status: "success", message: "資料寫入成功" });
     }
