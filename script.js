@@ -327,7 +327,7 @@ function renderPaymentRecords(payment) {
     // 格式化日期：將 2026-01-01 轉為 2026/01/01
     const startDisp = (payment.start || '').replace(/-/g, '/');
     const endDisp = (payment.end || '').replace(/-/g, '/');
-    document.getElementById('payMonth').innerText = `${payment.month || '-'} (${startDisp} ~ ${endDisp})`;
+    document.getElementById('payMonth').innerText = `${startDisp} ~ ${endDisp}`;
     document.getElementById('payTotal').innerText = '$' + (payment.total !== undefined ? payment.total.toLocaleString() : '0');
     
     const balanceEl = document.getElementById('payBalance');
