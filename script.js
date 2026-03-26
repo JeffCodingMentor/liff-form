@@ -80,9 +80,10 @@ async function fetchClassRecords(userName) {
         
         if (loading) loading.style.display = 'none';
         
-        if (resData && resData.data && resData.data.records) {
-            const records = resData.data.records;
+        if (resData && resData.data) {
+            const records = resData.data.records || [];
             renderCalendar(records); // 繪製月曆
+            
             if (records.length > 0) {
                 // 有紀錄時，確保表格顯示
                 document.getElementById('recordsTable').style.display = 'table';
@@ -110,6 +111,13 @@ async function fetchClassRecords(userName) {
                     emptyMsg.style.display = 'block';
                     emptyMsg.innerText = '目前無這個月的上課記錄';
                 }
+            }
+
+            // 處理繳費記錄
+            if (resData.data.payment) {
+                renderPaymentRecords(resData.data.payment);
+            } else {
+                document.getElementById('paymentRecordsContainer').style.display = 'none';
             }
             
             // 顯示備註如果有的話
@@ -223,6 +231,26 @@ function renderCalendar(records) {
     
     calendarEl.innerHTML = html;
     calendarEl.style.display = 'block';
+}
+
+function renderPaymentRecords(payment) {
+    const container = document.getElementById('paymentRecordsContainer');
+    if (!container || !payment) return;
+
+    document.getElementById('payMonth').innerText = payment.month || '-';
+    document.getElementById('payTotal').innerText = '$' + (payment.total !== undefined ? payment.total.toLocaleString() : '0');
+    document.getElementById('payBalance').innerText = '$' + (payment.balance !== undefined ? payment.balance.toLocaleString() : '0');
+
+    const actualArea = document.getElementById('actualPaymentArea');
+    if (payment.actual !== undefined && payment.actual !== '') {
+        actualArea.style.display = 'block';
+        document.getElementById('payActual').innerText = '$' + payment.actual.toLocaleString();
+        document.getElementById('payDate').innerText = payment.payDate || '-';
+    } else {
+        actualArea.style.display = 'none';
+    }
+
+    container.style.display = 'block';
 }
 
 // 跳轉聊天室共用邏輯

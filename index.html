@@ -41,7 +41,7 @@
         <h2><span id="regName"></span> 歡迎回來！</h2>
         <p>您已經完成報名登記囉。</p>
         
-        <!-- 上課紀錄區塊預設隱藏，若進入此區塊且讀取到資料則會顯示 -->
+        <!-- 上課紀錄區塊 -->
         <div id="classRecordsContainer" style="margin-top: 20px; margin-bottom: 20px; text-align: left; background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #e0e0e0; display: none;">
             <h3 style="color: #333; margin-top: 0; margin-bottom: 10px; font-size: 16px;">本月上課記錄</h3>
             <div id="calendar" style="margin-bottom: 15px; background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 10px; display: none;"></div>
@@ -57,6 +57,35 @@
                 <tbody id="recordsTableBody">
                 </tbody>
             </table>
+        </div>
+
+        <!-- 繳費記錄區塊 -->
+        <div id="paymentRecordsContainer" style="margin-top: 20px; margin-bottom: 20px; text-align: left; background: #f9fff9; padding: 15px; border-radius: 12px; border: 1px solid #c8e6c9; display: none;">
+            <h3 style="color: #2e7d32; margin-top: 0; margin-bottom: 12px; font-size: 16px; border-bottom: 1px solid #a5d6a7; padding-bottom: 8px;">繳費情形</h3>
+            <div id="paymentContent" style="font-size: 14px; color: #333; line-height: 1.6;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>收費週期：</span>
+                    <span id="payMonth" style="font-weight: 600;">-</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>應繳總計：</span>
+                    <span id="payTotal" style="font-weight: 600; color: #d32f2f;">-</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span>目前結餘：</span>
+                    <span id="payBalance" style="font-weight: 600;">-</span>
+                </div>
+                <div id="actualPaymentArea" style="display: none; background: #fff; padding: 8px; border-radius: 6px; border-left: 4px solid #4caf50;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>本期實收：</span>
+                        <span id="payActual" style="font-weight: 600; color: #2e7d32;">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; color: #666; font-size: 12px;">
+                        <span>繳費日期：</span>
+                        <span id="payDate">-</span>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <button id="chatBtn">前往聊天室</button>
