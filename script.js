@@ -77,10 +77,12 @@ async function fetchClassRecords(userName) {
             })
         });
         const resData = await response.json();
+        console.log("Response Data API:", resData); // [DEBUG LOG]
         
         if (loading) loading.style.display = 'none';
         
         if (resData && resData.data) {
+            console.log("Has resData.data"); // [DEBUG LOG]
             const records = resData.data.records || [];
             renderCalendar(records); // 繪製月曆
             
@@ -115,8 +117,10 @@ async function fetchClassRecords(userName) {
 
             // 處理繳費記錄
             if (resData.data.payment) {
+                console.log("Has payment data:", resData.data.payment); // [DEBUG LOG]
                 renderPaymentRecords(resData.data.payment);
             } else {
+                console.log("No payment data found."); // [DEBUG LOG]
                 document.getElementById('paymentRecordsContainer').style.display = 'none';
             }
             
