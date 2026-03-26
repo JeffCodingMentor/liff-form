@@ -21,7 +21,7 @@ async function init() {
             if (userData && userData.exists) {
                 document.getElementById('regName').innerText = userData.name || '';
                 document.getElementById('welcomeMessage').style.display = 'block';
-                document.getElementById('status').innerText = '歡迎回來';
+
                 
                 // 讀取上課紀錄
                 fetchClassRecords(userData.name);
@@ -151,7 +151,13 @@ function renderDropdown(defaultIndex) {
     globalCycles.forEach((c, idx) => {
         const option = document.createElement('option');
         option.value = idx;
-        option.innerText = c.month || `週期 ${idx + 1}`;
+        
+        // 格式化日期：將 2026-01-01 轉為 2026/01/01
+        const startDisp = (c.start || '').replace(/-/g, '/');
+        const endDisp = (c.end || '').replace(/-/g, '/');
+        
+        option.innerText = `${c.month || `週期 ${idx + 1}`} (${startDisp} ~ ${endDisp})`;
+        
         if (idx === defaultIndex) option.selected = true;
         select.appendChild(option);
     });
@@ -318,9 +324,20 @@ function renderPaymentRecords(payment) {
     const container = document.getElementById('paymentRecordsContainer');
     if (!container || !payment) return;
 
-    document.getElementById('payMonth').innerText = payment.month || '-';
+    // 格式化日期：將 2026-01-01 轉為 2026/01/01
+    const startDisp = (payment.start || '').replace(/-/g, '/');
+    const endDisp = (payment.end || '').replace(/-/g, '/');
+    document.getElementById('payMonth').innerText = `${payment.month || '-'} (${startDisp} ~ ${endDisp})`;
     document.getElementById('payTotal').innerText = '$' + (payment.total !== undefined ? payment.total.toLocaleString() : '0');
-    document.getElementById('payBalance').innerText = '$' + (payment.balance !== undefined ? payment.balance.toLocaleString() : '0');
+    
+    const balanceEl = document.getElementById('payBalance');
+    const balance = payment.balance || 0;
+    balanceEl.innerText = '$' + balance.toLocaleString();
+    if (balance < 0) {
+        balanceEl.style.color = '#d32f2f'; // 負值顯示紅色
+    } else {
+        balanceEl.style.color = ''; // 正值或零還原顏色
+    }
 
     const actualArea = document.getElementById('actualPaymentArea');
     if (payment.actual !== undefined && payment.actual !== '') {

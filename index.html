@@ -1,105 +1,192 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>報名資料填寫</title>
     <style>
-        body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { width: 90%; max-width: 380px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
-        h2 { color: #00b900; text-align: center; margin-bottom: 25px; font-weight: bold; }
-        .input-group { margin-bottom: 18px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; color: #444; font-size: 14px; }
-        input { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 16px; box-sizing: border-box; transition: 0.3s; }
-        input:focus { border-color: #00b900; outline: none; box-shadow: 0 0 0 3px rgba(0,185,0,0.1); }
-        button { width: 100%; padding: 15px; background-color: #00b900; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        button:hover { background-color: #009900; }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
-        #status { font-size: 12px; color: #999; text-align: center; margin-top: 15px; }
+        body {
+            font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 380px;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        h2 {
+            color: #00b900;
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: bold;
+        }
+
+        .input-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: #00b900;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 185, 0, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #00b900;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #009900;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        #status {
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+            margin-top: 15px;
+        }
     </style>
 </head>
+
 <body>
-<div class="container">
-    <div id="loadingArea">
-        <h2>正在載入中...</h2>
-    </div>
-
-    <div id="registrationForm" style="display: none;">
-        <h2>報名登記</h2>
-        <div class="input-group">
-            <label>您的姓名</label>
-            <input type="text" id="userName" placeholder="請輸入中文姓名">
-        </div>
-        <div class="input-group">
-            <label>您的生日</label>
-            <input type="date" id="userBirthday">
-        </div>
-        <button id="submitBtn">確認並前往聊天室</button>
-    </div>
-
-    <div id="welcomeMessage" style="display: none; text-align: center;">
-        <h2><span id="regName"></span> 歡迎回來！</h2>
-        <p>您已經完成報名登記囉。</p>
-        
-        <!-- 週期選擇 -->
-        <div id="cycleSelectorContainer" style="margin-top: 20px; margin-bottom: 15px; text-align: left; display: none;">
-            <label for="cycleSelector" style="display: block; font-weight: 600; color: #444; margin-bottom: 8px; font-size: 14px;">請選擇計費週期：</label>
-            <select id="cycleSelector" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 15px; outline: none; background: #fff;"></select>
+    <div class="container">
+        <div id="loadingArea">
+            <h2>正在載入中...</h2>
         </div>
 
-        <!-- 上課紀錄區塊 -->
-        <div id="classRecordsContainer" style="margin-top: 10px; margin-bottom: 20px; text-align: left; background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #e0e0e0; display: none;">
-            <h3 style="color: #333; margin-top: 0; margin-bottom: 10px; font-size: 16px;">本月上課記錄</h3>
-            <div id="calendar" style="margin-bottom: 15px; background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 10px; display: none;"></div>
-            <div id="recordsLoading" style="font-size: 13px; color: #666;">讀取中...</div>
-            <div id="recordsEmptyMsg" style="font-size: 13px; color: #555; display: none;"></div>
-            <table id="recordsTable" style="width: 100%; border-collapse: collapse; font-size: 14px; color: #555; display: none;">
-                <thead>
-                    <tr>
-                        <th style="padding: 8px; border-bottom: 2px solid #ddd; text-align: left; width: 40%;">日期時間</th>
-                        <th style="padding: 8px; border-bottom: 2px solid #ddd; text-align: left; width: 60%;">上課內容</th>
-                    </tr>
-                </thead>
-                <tbody id="recordsTableBody">
-                </tbody>
-            </table>
+        <div id="registrationForm" style="display: none;">
+            <h2>報名登記</h2>
+            <div class="input-group">
+                <label>您的姓名</label>
+                <input type="text" id="userName" placeholder="請輸入中文姓名">
+            </div>
+            <div class="input-group">
+                <label>您的生日</label>
+                <input type="date" id="userBirthday">
+            </div>
+            <button id="submitBtn">確認並前往聊天室</button>
         </div>
 
-        <!-- 繳費記錄區塊 -->
-        <div id="paymentRecordsContainer" style="margin-top: 20px; margin-bottom: 20px; text-align: left; background: #f9fff9; padding: 15px; border-radius: 12px; border: 1px solid #c8e6c9; display: none;">
-            <h3 style="color: #2e7d32; margin-top: 0; margin-bottom: 12px; font-size: 16px; border-bottom: 1px solid #a5d6a7; padding-bottom: 8px;">繳費情形</h3>
-            <div id="paymentContent" style="font-size: 14px; color: #333; line-height: 1.6;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <span>收費週期：</span>
-                    <span id="payMonth" style="font-weight: 600;">-</span>
+        <div id="welcomeMessage" style="display: none; text-align: center;">
+            <h2 id="regName"></h2>
+
+            <!-- 週期選擇 -->
+            <div id="cycleSelectorContainer"
+                style="margin-top: 20px; margin-bottom: 15px; text-align: left; display: none;">
+                <label for="cycleSelector"
+                    style="display: block; font-weight: 600; color: #444; margin-bottom: 8px; font-size: 14px;">請選擇計費週期：</label>
+                <select id="cycleSelector"
+                    style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 15px; outline: none; background: #fff;"></select>
+            </div>
+
+            <!-- 上課紀錄區塊 -->
+            <div id="classRecordsContainer"
+                style="margin-top: 10px; margin-bottom: 20px; text-align: left; background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #e0e0e0; display: none;">
+                <h3 style="color: #333; margin-top: 0; margin-bottom: 10px; font-size: 16px;">上課記錄</h3>
+                <div id="calendar"
+                    style="margin-bottom: 15px; background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 10px; display: none;">
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <span>應繳總計：</span>
-                    <span id="payTotal" style="font-weight: 600; color: #d32f2f;">-</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                    <span>目前結餘：</span>
-                    <span id="payBalance" style="font-weight: 600;">-</span>
-                </div>
-                <div id="actualPaymentArea" style="display: none; background: #fff; padding: 8px; border-radius: 6px; border-left: 4px solid #4caf50;">
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>本期實收：</span>
-                        <span id="payActual" style="font-weight: 600; color: #2e7d32;">-</span>
+                <div id="recordsLoading" style="font-size: 13px; color: #666;">讀取中...</div>
+                <div id="recordsEmptyMsg" style="font-size: 13px; color: #555; display: none;"></div>
+                <table id="recordsTable"
+                    style="width: 100%; border-collapse: collapse; font-size: 14px; color: #555; display: none;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 8px; border-bottom: 2px solid #ddd; text-align: left; width: 40%;">日期時間
+                            </th>
+                            <th style="padding: 8px; border-bottom: 2px solid #ddd; text-align: left; width: 60%;">上課內容
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsTableBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 繳費記錄區塊 -->
+            <div id="paymentRecordsContainer"
+                style="margin-top: 20px; margin-bottom: 20px; text-align: left; background: #f9fff9; padding: 15px; border-radius: 12px; border: 1px solid #c8e6c9; display: none;">
+                <h3
+                    style="color: #2e7d32; margin-top: 0; margin-bottom: 12px; font-size: 16px; border-bottom: 1px solid #a5d6a7; padding-bottom: 8px;">
+                    繳費情形</h3>
+                <div id="paymentContent" style="font-size: 14px; color: #333; line-height: 1.6;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <span>收費週期：</span>
+                        <span id="payMonth" style="font-weight: 600;">-</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; color: #666; font-size: 12px;">
-                        <span>繳費日期：</span>
-                        <span id="payDate">-</span>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <span>應繳總計：</span>
+                        <span id="payTotal" style="font-weight: 600;">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span>本期結餘：</span>
+                        <span id="payBalance" style="font-weight: 600;">-</span>
+                    </div>
+                    <div id="actualPaymentArea"
+                        style="display: none; background: #fff; padding: 8px; border-radius: 6px; border-left: 4px solid #4caf50;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>本期實收：</span>
+                            <span id="payActual" style="font-weight: 600; color: #2e7d32;">-</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; color: #666; font-size: 12px;">
+                            <span>繳費日期：</span>
+                            <span id="payDate">-</span>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <button id="chatBtn">前往聊天室</button>
-    </div>
 
-    <div id="status">正在連接 LINE...</div>
-</div>
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="script.js"></script>
+            <button id="chatBtn">前往聊天室</button>
+        </div>
+
+        <div id="status">正在連接 LINE...</div>
+    </div>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="script.js"></script>
 </body>
+
 </html>

@@ -77,78 +77,118 @@ function doPost(e) {
       }
       
       var sheetLastRow = sheetRecord.getLastRow();
-      var records = [];
+      var classRecords = [];
       if (sheetLastRow >= 2) {
         // 取到第 J 欄 (Index 9)
-        var rangeValues = sheetRecord.getRange(1, 1, sheetLastRow, 10).getValues();
-        var now = new Date();
-        var currentYear = now.getFullYear();
-        var currentMonth = now.getMonth(); // 0-based
-        
-        // 假設第一列是表頭，從第二列開始
-        for (var r = 1; r < rangeValues.length; r++) {
-          var dateCell = rangeValues[r][0]; // A 欄，Index 0
+        var rangeValues = sheetRecord.getRange(2, 1, sheetLastRow - 1, 10).getValues();
+        for (var r = 0; r < rangeValues.length; r++) {
+          var dateCell = rangeValues[r][0]; // A 欄
           if (!dateCell) continue;
           
           var rowDate = new Date(dateCell);
-          // 確認是有效的日期物件
+          var dateStr = '';
           if (Object.prototype.toString.call(rowDate) === "[object Date]" && !isNaN(rowDate.getTime())) {
-            if (rowDate.getFullYear() === currentYear && rowDate.getMonth() === currentMonth) {
-              var colI = rangeValues[r][8] || ''; // I 欄
-              var colJ = rangeValues[r][9] || ''; // J 欄
-              
-              if (colI !== '' || colJ !== '') {
-                records.push({
-                  colI: colI.toString(), 
-                  colJ: colJ.toString()
-                });
-              }
-            }
+            dateStr = Utilities.formatDate(rowDate, "GMT+8", "yyyy-MM-dd");
+          } else {
+            dateStr = dateCell.toString();
+          }
+          
+          var colI = rangeValues[r][8] || ''; // I 欄
+          var colJ = rangeValues[r][9] || ''; // J 欄
+          
+          if (colI !== '' || colJ !== '') {
+            classRecords.push({
+              date: dateStr,
+              colI: colI.toString(), 
+              colJ: colJ.toString()
+            });
           }
         }
       }
 
-      // --- 讀取繳費記錄 ---
-      var paymentData = null;
-      var sheetPayment = recordSpreadsheet.getSheetByName("繳費記錄");
+      var debugLogs = [];
+      debugLogs.push("Start looking for payment data v2");
+
+      // --- 讀取繳費紀錄 ---
+      var cycles = [];
+      var sheetPayment = recordSpreadsheet.getSheetByName("繳費紀錄");
       if (sheetPayment) {
+        debugLogs.push("Found '繳費紀錄' sheet");
         var paymentLastRow = sheetPayment.getLastRow();
+        debugLogs.push("paymentLastRow: " + paymentLastRow);
+        
         if (paymentLastRow >= 2) {
-          var paymentValues = sheetPayment.getRange(2, 1, paymentLastRow - 1, 7).getValues();
-          var today = new Date();
-          // 將時分秒歸零，以便進行日期比較
-          today.setHours(0, 0, 0, 0);
+          // 讀取 A 到 R 欄 (index 0 到 17)
+          var paymentValues = sheetPayment.getRange(2, 1, paymentLastRow - 1, 18).getValues();
           
           for (var p = 0; p < paymentValues.length; p++) {
             var row = paymentValues[p];
-            var startDate = new Date(row[1]); // B 欄
-            var endDate = new Date(row[2]);   // C 欄
+            if (!row[0]) continue; // 忽略沒有月份的列
             
-            if (Object.prototype.toString.call(startDate) === "[object Date]" && !isNaN(startDate.getTime()) &&
-                Object.prototype.toString.call(endDate) === "[object Date]" && !isNaN(endDate.getTime())) {
-              
-              startDate.setHours(0, 0, 0, 0);
-              endDate.setHours(23, 59, 59, 999); // 包含截止日當天
-              
-              if (today >= startDate && today <= endDate) {
-                paymentData = {
-                  month: row[0] || '',       // A 欄
-                  total: row[3] || 0,        // D 欄
-                  balance: row[4] || 0,      // E 欄
-                  actual: row[5] || '',      // F 欄
-                  payDate: row[6] ? Utilities.formatDate(new Date(row[6]), "GMT+8", "yyyy-MM-dd") : '' // G 欄
-                };
-                break;
+            var startDateStr = '';
+            var endDateStr = '';
+            var startDateObj = new Date(row[1]); // B 欄
+            var endDateObj = new Date(row[2]);   // C 欄
+            
+            if (Object.prototype.toString.call(startDateObj) === "[object Date]" && !isNaN(startDateObj.getTime())) {
+               startDateStr = Utilities.formatDate(startDateObj, "GMT+8", "yyyy-MM-dd");
+            }
+            if (Object.prototype.toString.call(endDateObj) === "[object Date]" && !isNaN(endDateObj.getTime())) {
+               endDateStr = Utilities.formatDate(endDateObj, "GMT+8", "yyyy-MM-dd");
+            }
+
+            var classDates = [];
+            // I 欄到 R 欄的索引是 8 到 17
+            for (var c = 8; c <= 17; c++) {
+               var cd = row[c];
+               if (cd) {
+                 var cdObj = new Date(cd);
+                 if (Object.prototype.toString.call(cdObj) === "[object Date]" && !isNaN(cdObj.getTime())) {
+                    classDates.push(Utilities.formatDate(cdObj, "GMT+8", "yyyy-MM-dd"));
+                 } else if (typeof cd === 'string' && cd.trim() !== '') {
+                    classDates.push(cd.trim());
+                 } else {
+                    classDates.push(cd.toString());
+                 }
+               }
+            }
+
+            var payDateStr = '';
+            if (row[6]) {
+              var pDateObj = new Date(row[6]);
+              if (Object.prototype.toString.call(pDateObj) === "[object Date]" && !isNaN(pDateObj.getTime())) {
+                payDateStr = Utilities.formatDate(pDateObj, "GMT+8", "yyyy-MM-dd");
+              } else {
+                payDateStr = row[6].toString();
               }
             }
+
+            cycles.push({
+               month: row[0].toString(),
+               start: startDateStr,
+               end: endDateStr,
+               total: row[3] || 0,
+               balance: row[4] || 0,
+               actual: row[5] || '',
+               payDate: payDateStr,
+               classDates: classDates
+            });
           }
+        } else {
+           debugLogs.push("No data rows in '繳費紀錄'");
         }
+      } else {
+         debugLogs.push("Sheet '繳費紀錄' not found");
       }
+      
+      // 反轉陣列，讓新的週期在前面
+      cycles.reverse();
       
       return createResponse({ 
         status: "success", 
-        records: records,
-        payment: paymentData
+        cycles: cycles,
+        classRecords: classRecords,
+        debugLogs: debugLogs
       });
     }
     
