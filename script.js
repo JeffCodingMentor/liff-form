@@ -19,6 +19,13 @@ async function init() {
             document.getElementById('loadingArea').style.display = 'none';
             
             if (userData && userData.exists) {
+                // 在讀取詳細資料前，先根據 "教室" 決定顏色風格
+                if (userData.classroom === 'J') {
+                    document.body.classList.add('blue-theme');
+                } else {
+                    document.body.classList.remove('blue-theme');
+                }
+
                 document.getElementById('regName').innerText = userData.name || '';
                 document.getElementById('welcomeMessage').style.display = 'block';
                 document.getElementById('status').innerText = ''; // 清除狀態文字
@@ -90,11 +97,13 @@ async function fetchClassRecords(userName) {
             globalCycles = resData.data.cycles || [];
             globalClassRecords = resData.data.classRecords || [];
             
-            // 套用主題
-            if (resData.data.classroom === 'J') {
-                document.body.classList.add('blue-theme');
-            } else {
-                document.body.classList.remove('blue-theme');
+            // 再次確認主題 (以資料回傳為準)
+            if (resData.data.classroom) {
+                if (resData.data.classroom === 'J') {
+                    document.body.classList.add('blue-theme');
+                } else {
+                    document.body.classList.remove('blue-theme');
+                }
             }
 
             if (globalCycles.length > 0) {

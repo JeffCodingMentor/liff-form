@@ -20,6 +20,7 @@ function doPost(e) {
       var dataRange = sheet.getRange(1, 1, lastRow, 6).getValues();
       var exists = false;
       var registeredName = "";
+      var registeredClassroom = "I";
       
       for (var i = 0; i < dataRange.length; i++) {
         // 第 6 欄 (Index 5) 是 userId
@@ -27,11 +28,13 @@ function doPost(e) {
           exists = true;
           // 第 2 欄 (Index 1) 是姓名
           registeredName = dataRange[i][1];
+          // 第 4 欄 (Index 3) 是教室
+          registeredClassroom = dataRange[i][3] || "I";
           break;
         }
       }
       
-      return createResponse({ exists: exists, name: registeredName });
+      return createResponse({ exists: exists, name: registeredName, classroom: registeredClassroom });
     }
     
     // 2. 報名註冊 (系統登入)
