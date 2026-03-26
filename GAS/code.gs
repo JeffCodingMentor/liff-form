@@ -54,21 +54,36 @@ function doPost(e) {
       }
       
       var parentFolderId = '1A4SOGVwZCG77rA8lXfGaT1pHXoeJ7n8z';
-      var parentFolder = DriveApp.getFolderById(parentFolderId);
+      var fallbackFolderId = '1mYCVAVWSjn_b0T1yOnF96KakJ5jeQJqU';
       
-      // 尋找名稱包含 _name 的子目錄 (假設格式為 nnn_name)
-      var folders = parentFolder.searchFolders("title contains '_" + userName + "'");
-      if (!folders.hasNext()) {
-        return createResponse({ status: "success", records: [], message: "無相關目錄" });
-      }
-      var targetFolder = folders.next();
+      var primaryFolder = DriveApp.getFolderById(parentFolderId);
+      var folders = primaryFolder.searchFolders("title contains '_" + userName + "'");
       
-      // 尋找裡面的同名檔案
-      var files = targetFolder.searchFiles("title contains '_" + userName + "' and mimeType = 'application/vnd.google-apps.spreadsheet'");
-      if (!files.hasNext()) {
-        return createResponse({ status: "success", records: [], message: "目錄中無該檔案" });
+      var targetFile = null;
+      var isFallback = false;
+      if (folders.hasNext()) {
+        // 第一種情況：在主目錄下找到子目錄，再找裡面的檔案
+        var targetFolder = folders.next();
+        var files = targetFolder.searchFiles("title contains '_" + userName + "' and mimeType = 'application/vnd.google-apps.spreadsheet'");
+        if (files.hasNext()) {
+          targetFile = files.next();
+          isFallback = false;
+        }
+      } 
+      
+      if (!targetFile) {
+        // 第二種情況：主目錄找不到子目錄，或是子目錄裡沒檔案，則到備用目錄直接找檔案
+        var fallbackFolder = DriveApp.getFolderById(fallbackFolderId);
+        var files = fallbackFolder.searchFiles("title contains '_" + userName + "' and mimeType = 'application/vnd.google-apps.spreadsheet'");
+        if (files.hasNext()) {
+          targetFile = files.next();
+          isFallback = true;
+        }
       }
-      var targetFile = files.next();
+
+      if (!targetFile) {
+        return createResponse({ status: "success", records: [], message: "找不到相關資料檔案" });
+      }
       
       var recordSpreadsheet = SpreadsheetApp.openById(targetFile.getId());
       var sheetRecord = recordSpreadsheet.getSheetByName("上課紀錄");
@@ -188,6 +203,7 @@ function doPost(e) {
         status: "success", 
         cycles: cycles,
         classRecords: classRecords,
+        isFallback: isFallback,
         debugLogs: debugLogs
       });
     }

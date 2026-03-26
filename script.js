@@ -90,6 +90,13 @@ async function fetchClassRecords(userName) {
             globalCycles = resData.data.cycles || [];
             globalClassRecords = resData.data.classRecords || [];
             
+            // 套用主題
+            if (resData.data.isFallback) {
+                document.body.classList.add('blue-theme');
+            } else {
+                document.body.classList.remove('blue-theme');
+            }
+
             if (globalCycles.length > 0) {
                 // 尋找出預設的計費週期 (對應今天的日期)
                 let defaultIndex = 0;
@@ -285,9 +292,9 @@ function renderCalendar(classDates, startDateStr, endDateStr) {
         for (let day = 1; day <= lastDay.getDate(); day++) {
             const dateStr = currY + '-' + (currM + 1) + '-' + day;
             const hasClass = classDatesSet.has(dateStr);
-            // 上課日期標上不一樣的底色 (例如淺綠色代表有課)
-            const bg = hasClass ? '#e6f4ea' : 'transparent';
-            const color = hasClass ? '#137333' : '#444';
+            // 上課日期標上不一樣的底色 (使用 CSS 變數支援主題切換)
+            const bg = hasClass ? 'var(--cal-bg)' : 'transparent';
+            const color = hasClass ? 'var(--cal-text)' : '#444';
             const fw = hasClass ? 'bold' : 'normal';
             const br = hasClass ? '50%' : '0';
             

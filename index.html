@@ -6,6 +6,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>學習繳費紀錄</title>
     <style>
+        :root {
+            --primary-color: #00b900;
+            --primary-hover: #009900;
+            --accent-color: #2e7d32;
+            --bg-light: #f9fff9;
+            --border-light: #c8e6c9;
+            --border-accent: #a5d6a7;
+            --cal-bg: #e6f4ea;
+            --cal-text: #137333;
+        }
+
+        body.blue-theme {
+            --primary-color: #007bff;
+            --primary-hover: #0056b3;
+            --accent-color: #0056b3;
+            --bg-light: #f0f7ff;
+            --border-light: #b8daff;
+            --border-accent: #9fcdff;
+            --cal-bg: #e7f3ff;
+            --cal-text: #004085;
+        }
+
         body {
             font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #f4f7f6;
@@ -26,7 +48,7 @@
         }
 
         h2 {
-            color: #00b900;
+            color: var(--primary-color);
             text-align: center;
             margin-bottom: 25px;
             font-weight: bold;
@@ -55,7 +77,7 @@
         }
 
         input:focus {
-            border-color: #00b900;
+            border-color: var(--primary-color);
             outline: none;
             box-shadow: 0 0 0 3px rgba(0, 185, 0, 0.1);
         }
@@ -63,7 +85,7 @@
         button {
             width: 100%;
             padding: 15px;
-            background-color: #00b900;
+            background-color: var(--primary-color);
             color: white;
             border: none;
             border-radius: 10px;
@@ -75,7 +97,7 @@
         }
 
         button:hover {
-            background-color: #009900;
+            background-color: var(--primary-hover);
         }
 
         button:disabled {
@@ -149,9 +171,9 @@
 
             <!-- 繳費記錄區塊 -->
             <div id="paymentRecordsContainer"
-                style="margin-top: 20px; margin-bottom: 20px; text-align: left; background: #f9fff9; padding: 15px; border-radius: 12px; border: 1px solid #c8e6c9; display: none;">
+                style="margin-top: 20px; margin-bottom: 20px; text-align: left; background: var(--bg-light); padding: 15px; border-radius: 12px; border: 1px solid var(--border-light); display: none;">
                 <h3
-                    style="color: #2e7d32; margin-top: 0; margin-bottom: 12px; font-size: 16px; border-bottom: 1px solid #a5d6a7; padding-bottom: 8px;">
+                    style="color: var(--accent-color); margin-top: 0; margin-bottom: 12px; font-size: 16px; border-bottom: 1px solid var(--border-accent); padding-bottom: 8px;">
                     繳費情形</h3>
                 <div id="paymentContent" style="font-size: 14px; color: #333; line-height: 1.6;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
@@ -167,10 +189,10 @@
                         <span id="payBalance" style="font-weight: 600;">-</span>
                     </div>
                     <div id="actualPaymentArea"
-                        style="display: none; background: #fff; padding: 8px; border-radius: 6px; border-left: 4px solid #4caf50;">
+                        style="display: none; background: #fff; padding: 8px; border-radius: 6px; border-left: 4px solid var(--primary-color);">
                         <div style="display: flex; justify-content: space-between;">
                             <span>本期實收：</span>
-                            <span id="payActual" style="font-weight: 600; color: #2e7d32;">-</span>
+                            <span id="payActual" style="font-weight: 600; color: var(--accent-color);">-</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; color: #666; font-size: 12px;">
                             <span>繳費日期：</span>
