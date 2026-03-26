@@ -21,7 +21,7 @@ async function init() {
             if (userData && userData.exists) {
                 document.getElementById('regName').innerText = userData.name || '';
                 document.getElementById('welcomeMessage').style.display = 'block';
-
+                document.getElementById('status').innerText = ''; // 清除狀態文字
                 
                 // 讀取上課紀錄
                 fetchClassRecords(userData.name);
