@@ -11,19 +11,19 @@ function doPost(e) {
         throw new Error("Missing userId for check");
       }
       
-      // 取得所有資料 (從第 1 欄到第 5 欄)
+      // 取得所有資料 (從第 1 欄到第 6 欄)
       var lastRow = sheet.getLastRow();
       if (lastRow < 1) {
         return createResponse({ exists: false });
       }
       
-      var dataRange = sheet.getRange(1, 1, lastRow, 5).getValues();
+      var dataRange = sheet.getRange(1, 1, lastRow, 6).getValues();
       var exists = false;
       var registeredName = "";
       
       for (var i = 0; i < dataRange.length; i++) {
-        // 第 5 欄 (Index 4) 是 userId
-        if (dataRange[i][4] === userIdToCheck) {
+        // 第 6 欄 (Index 5) 是 userId
+        if (dataRange[i][5] === userIdToCheck) {
           exists = true;
           // 第 2 欄 (Index 1) 是姓名
           registeredName = dataRange[i][1];
@@ -55,36 +55,48 @@ function doPost(e) {
         throw new Error("Missing name for get_records");
       }
       
+      // 先從主表 (註冊表) 找出該學生的 "教室"
+      var lastRow = sheet.getLastRow();
+      var classroom = 'I'; // 預設為 I
+      if (lastRow >= 1) {
+        var dataRange = sheet.getRange(1, 1, lastRow, 6).getValues();
+        for (var i = 0; i < dataRange.length; i++) {
+          // 第 2 欄 (Index 1) 是姓名
+          if (dataRange[i][1] === userName) {
+            // 第 4 欄 (Index 3) 是教室
+            classroom = dataRange[i][3] || 'I';
+            break;
+          }
+        }
+      }
+
       var parentFolderId = '1A4SOGVwZCG77rA8lXfGaT1pHXoeJ7n8z';
       var fallbackFolderId = '1mYCVAVWSjn_b0T1yOnF96KakJ5jeQJqU';
       
-      var primaryFolder = DriveApp.getFolderById(parentFolderId);
-      var folders = primaryFolder.searchFolders("title contains '_" + userName + "'");
-      
       var targetFile = null;
-      var isFallback = false;
-      if (folders.hasNext()) {
-        // 第一種情況：在主目錄下找到子目錄，再找裡面的檔案
-        var targetFolder = folders.next();
-        var files = targetFolder.searchFiles("title contains '_" + userName + "' and mimeType = 'application/vnd.google-apps.spreadsheet'");
-        if (files.hasNext()) {
-          targetFile = files.next();
-          isFallback = false;
+
+      if (classroom === 'I') {
+        // 第一種情況 (教室 I)：從主目錄搜尋 "子目錄"，再找裡面的檔案
+        var primaryFolder = DriveApp.getFolderById(parentFolderId);
+        var folders = primaryFolder.searchFolders("title contains '_" + userName + "'");
+        if (folders.hasNext()) {
+          var targetFolder = folders.next();
+          var files = targetFolder.searchFiles("title contains '_" + userName + "' and mimeType = 'application/vnd.google-apps.spreadsheet'");
+          if (files.hasNext()) {
+            targetFile = files.next();
+          }
         }
-      } 
-      
-      if (!targetFile) {
-        // 第二種情況：主目錄找不到子目錄，或是子目錄裡沒檔案，則到備用目錄直接找檔案
+      } else if (classroom === 'J') {
+        // 第二種情況 (教室 J)：直接到備用目錄搜尋 "檔案"
         var fallbackFolder = DriveApp.getFolderById(fallbackFolderId);
         var files = fallbackFolder.searchFiles("title contains '_" + userName + "' and mimeType = 'application/vnd.google-apps.spreadsheet'");
         if (files.hasNext()) {
           targetFile = files.next();
-          isFallback = true;
         }
       }
 
       if (!targetFile) {
-        return createResponse({ status: "success", records: [], message: "找不到相關資料檔案" });
+        return createResponse({ status: "success", records: [], message: "找不到該學生的上課資料檔案" });
       }
       
       var recordSpreadsheet = SpreadsheetApp.openById(targetFile.getId());
@@ -205,7 +217,7 @@ function doPost(e) {
         status: "success", 
         cycles: cycles,
         classRecords: classRecords,
-        isFallback: isFallback,
+        classroom: classroom,
         debugLogs: debugLogs
       });
     }

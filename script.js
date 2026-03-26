@@ -91,7 +91,7 @@ async function fetchClassRecords(userName) {
             globalClassRecords = resData.data.classRecords || [];
             
             // 套用主題
-            if (resData.data.isFallback) {
+            if (resData.data.classroom === 'J') {
                 document.body.classList.add('blue-theme');
             } else {
                 document.body.classList.remove('blue-theme');
