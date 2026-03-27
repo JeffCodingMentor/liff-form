@@ -1,5 +1,5 @@
 const liffId = '2009406277-fAYDHQN4';
-const oaId = '@332tttbt'; // <-- 記得修改這裡
+const oaId = '@838phhvg';
 
 let globalCycles = [];
 let globalClassRecords = [];
@@ -415,6 +415,15 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
 
         if (!response.ok) {
             throw new Error('伺服器錯誤，寫入資料失敗');
+        }
+
+        // 發送註冊完成訊息 (僅限 LINE App 內開啟)
+        if (liff.isInClient()) {
+            const roomName = (classroom === 'I') ? 'Im未來' : 'Jeff Coding';
+            liff.sendMessages([{
+                type: 'text',
+                text: `我已完成註冊！\n學生姓名：${inputName}\n所屬教室：${roomName}`
+            }]).catch(err => console.error("Send message failed:", err));
         }
 
         // 註冊成功後，直接進入已註冊畫面，不再跳轉
