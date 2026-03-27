@@ -417,12 +417,27 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
             throw new Error('伺服器錯誤，寫入資料失敗');
         }
 
-        redirectToOA();
+        // 註冊成功後，直接進入已註冊畫面，不再跳轉
+        document.getElementById('registrationForm').style.display = 'none';
+        
+        // 根據剛才選的教室套用主題
+        if (classroom === 'J') {
+            document.body.classList.add('blue-theme');
+        } else {
+            document.body.classList.remove('blue-theme');
+        }
+
+        document.getElementById('regName').innerText = inputName;
+        document.getElementById('welcomeMessage').style.display = 'block';
+        document.getElementById('status').innerText = '';
+        
+        // 讀取上課紀錄
+        fetchClassRecords(inputName);
 
     } catch (err) {
         alert('發生錯誤: ' + err);
         btn.disabled = false;
-        btn.innerText = '確認並前往聊天室';
+        btn.innerText = '確認';
     }
 });
 
