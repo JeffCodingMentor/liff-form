@@ -57,21 +57,14 @@ function doPost(e) {
       if (classroom === 'I') {
         // 教室 I：從主目錄搜尋子目錄，再找其中的檔案
         var primaryFolder = DriveApp.getFolderById(parentFolderId);
-        var folders = primaryFolder.searchFolders("title contains '_" + name + "'");
-        if (folders.hasNext()) {
-          var targetFolder = folders.next();
-          var files = targetFolder.searchFiles("title contains '_" + name + "' and mimeType = 'application/vnd.google-apps.spreadsheet'");
-          if (files.hasNext()) {
-            targetFile = files.next();
-          }
+        var targetFolder = findFolderByExactName(primaryFolder, name);
+        if (targetFolder) {
+          targetFile = findFileByExactName(targetFolder, name);
         }
       } else if (classroom === 'J') {
         // 教室 J：直接在備用目錄搜尋檔案
         var fallbackFolder = DriveApp.getFolderById(fallbackFolderId);
-        var files = fallbackFolder.searchFiles("title contains '_" + name + "' and mimeType = 'application/vnd.google-apps.spreadsheet'");
-        if (files.hasNext()) {
-          targetFile = files.next();
-        }
+        targetFile = findFileByExactName(fallbackFolder, name);
       }
       
       // === Step 2: 找不到檔案 → 資料錯誤 ===
@@ -166,21 +159,14 @@ function doPost(e) {
       if (classroom === 'I') {
         // 第一種情況 (教室 I)：從主目錄搜尋 "子目錄"，再找裡面的檔案
         var primaryFolder = DriveApp.getFolderById(parentFolderId);
-        var folders = primaryFolder.searchFolders("title contains '_" + userName + "'");
-        if (folders.hasNext()) {
-          var targetFolder = folders.next();
-          var files = targetFolder.searchFiles("title contains '_" + userName + "' and mimeType = 'application/vnd.google-apps.spreadsheet'");
-          if (files.hasNext()) {
-            targetFile = files.next();
-          }
+        var targetFolder = findFolderByExactName(primaryFolder, userName);
+        if (targetFolder) {
+          targetFile = findFileByExactName(targetFolder, userName);
         }
       } else if (classroom === 'J') {
         // 第二種情況 (教室 J)：直接到備用目錄搜尋 "檔案"
         var fallbackFolder = DriveApp.getFolderById(fallbackFolderId);
-        var files = fallbackFolder.searchFiles("title contains '_" + userName + "' and mimeType = 'application/vnd.google-apps.spreadsheet'");
-        if (files.hasNext()) {
-          targetFile = files.next();
-        }
+        targetFile = findFileByExactName(fallbackFolder, userName);
       }
 
       if (!targetFile) {
@@ -320,4 +306,39 @@ function doPost(e) {
 function createResponse(payload) {
   return ContentService.createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * 在資料夾中以精確名稱搜尋 Google Sheets 檔案。
+ * 策略：Drive API 用 contains 預先過濾，再用 regex 確認 '_name' 後方不緊接中文字，
+ * 以避免「陳希」誤配「陳希望」的問題。
+ */
+function findFileByExactName(folder, name) {
+  // \u4e00-\u9fff 涵蓋常用 CJK 中文字範圍
+  var regex = new RegExp('_' + name + '([^\u4e00-\u9fff]|$)');
+  var files = folder.searchFiles(
+    "title contains '_" + name + "' and mimeType = 'application/vnd.google-apps.spreadsheet'"
+  );
+  while (files.hasNext()) {
+    var f = files.next();
+    if (regex.test(f.getName())) {
+      return f;
+    }
+  }
+  return null;
+}
+
+/**
+ * 在資料夾中以精確名稱搜尋子資料夾（教室 I 的目錄結構用）。
+ */
+function findFolderByExactName(parentFolder, name) {
+  var regex = new RegExp('_' + name + '([^\u4e00-\u9fff]|$)');
+  var folders = parentFolder.searchFolders("title contains '_" + name + "'");
+  while (folders.hasNext()) {
+    var f = folders.next();
+    if (regex.test(f.getName())) {
+      return f;
+    }
+  }
+  return null;
 }
