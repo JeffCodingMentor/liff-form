@@ -11,16 +11,17 @@ function doPost(e) {
         throw new Error("Missing userId for check");
       }
       
-      // 取得所有資料 (從第 1 欄到第 6 欄)
+      // 取得所有資料 (從第 1 欄到第 7 欄，含 SheetID)
       var lastRow = sheet.getLastRow();
       if (lastRow < 1) {
         return createResponse({ exists: false });
       }
       
-      var dataRange = sheet.getRange(1, 1, lastRow, 6).getValues();
+      var dataRange = sheet.getRange(1, 1, lastRow, 7).getValues();
       var exists = false;
       var registeredName = "";
       var registeredClassroom = "I";
+      var registeredSheetId = "";
       
       for (var i = 0; i < dataRange.length; i++) {
         // 第 6 欄 (Index 5) 是 userId
@@ -30,26 +31,99 @@ function doPost(e) {
           registeredName = dataRange[i][1];
           // 第 4 欄 (Index 3) 是教室
           registeredClassroom = dataRange[i][3] || "I";
+          // 第 7 欄 (Index 6) 是上課紀錄 Sheet File ID (新欄位，舊資料可能為空)
+          registeredSheetId = dataRange[i][6] || "";
           break;
         }
       }
       
-      return createResponse({ exists: exists, name: registeredName, classroom: registeredClassroom });
+      return createResponse({ exists: exists, name: registeredName, classroom: registeredClassroom, sheetId: registeredSheetId });
     }
     
-    // 2. 報名註冊 (系統登入)
+    // 2. 報名註冊 (先驗證學生上課紀錄，再寫入)
     if (action === 'submit') {
       var name = data.name || '';
-      var birthday = data.birthday || '';
+      var birthday = data.birthday || ''; // 格式: YYYY-MM-DD (來自前端 <input type="date">)
       var classroom = data.classroom || '';
       var lineId = data.userId || '';
       var displayName = data.displayName || '';
       var timestamp = new Date();
       
-      // 欄位順序: 時間戳記 | 姓名 | 生日 | 教室 | 顯示名稱 | LINE ID
-      sheet.appendRow([timestamp, name, birthday, classroom, displayName, lineId]);
+      // === Step 1: 依姓名+教室搜尋學生的上課紀錄 Google Sheet ===
+      var parentFolderId = '1A4SOGVwZCG77rA8lXfGaT1pHXoeJ7n8z';
+      var fallbackFolderId = '1mYCVAVWSjn_b0T1yOnF96KakJ5jeQJqU';
+      var targetFile = null;
       
-      return createResponse({ status: "success", message: "資料寫入成功" });
+      if (classroom === 'I') {
+        // 教室 I：從主目錄搜尋子目錄，再找其中的檔案
+        var primaryFolder = DriveApp.getFolderById(parentFolderId);
+        var folders = primaryFolder.searchFolders("title contains '_" + name + "'");
+        if (folders.hasNext()) {
+          var targetFolder = folders.next();
+          var files = targetFolder.searchFiles("title contains '_" + name + "' and mimeType = 'application/vnd.google-apps.spreadsheet'");
+          if (files.hasNext()) {
+            targetFile = files.next();
+          }
+        }
+      } else if (classroom === 'J') {
+        // 教室 J：直接在備用目錄搜尋檔案
+        var fallbackFolder = DriveApp.getFolderById(fallbackFolderId);
+        var files = fallbackFolder.searchFiles("title contains '_" + name + "' and mimeType = 'application/vnd.google-apps.spreadsheet'");
+        if (files.hasNext()) {
+          targetFile = files.next();
+        }
+      }
+      
+      // === Step 2: 找不到檔案 → 資料錯誤 ===
+      if (!targetFile) {
+        return createResponse({ status: "error", code: "DATA_ERROR", message: "資料錯誤：找不到該學生的上課紀錄檔案" });
+      }
+      
+      var fileId = targetFile.getId();
+      
+      // === Step 3: 讀取 B6 儲存格的生日並格式化 ===
+      var recordSpreadsheet = SpreadsheetApp.openById(fileId);
+      // 嘗試依序開啟：上課紀錄 → 第一個工作表
+      var firstSheet = recordSpreadsheet.getSheetByName("上課紀錄") || recordSpreadsheet.getSheets()[0];
+      var b6Value = firstSheet.getRange("B6").getValue();
+      
+      var b6DateStr = '';
+      if (b6Value instanceof Date && !isNaN(b6Value.getTime())) {
+        // Date 物件 → 格式化為 YYYY-MM-DD
+        b6DateStr = Utilities.formatDate(b6Value, "GMT+8", "yyyy-MM-dd");
+      } else if (typeof b6Value === 'string' && b6Value.trim() !== '') {
+        // 文字型態，嘗試解析各種台灣常見格式
+        var raw = b6Value.trim();
+        // 2010/03/15 or 2010-03-15
+        var m1 = raw.match(/(\d{4})[\-\/](\d{1,2})[\-\/](\d{1,2})/);
+        if (m1) {
+          b6DateStr = m1[1] + '-' + ('0' + m1[2]).slice(-2) + '-' + ('0' + m1[3]).slice(-2);
+        } else {
+          // 2010年3月15日
+          var m2 = raw.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+          if (m2) {
+            b6DateStr = m2[1] + '-' + ('0' + m2[2]).slice(-2) + '-' + ('0' + m2[3]).slice(-2);
+          }
+        }
+      }
+      
+      // 同樣格式化前端傳來的 birthday (YYYY-MM-DD 應已標準，但做個保護)
+      var normalizedBirthday = '';
+      var bm = birthday.match(/(\d{4})[\-\/](\d{1,2})[\-\/](\d{1,2})/);
+      if (bm) {
+        normalizedBirthday = bm[1] + '-' + ('0' + bm[2]).slice(-2) + '-' + ('0' + bm[3]).slice(-2);
+      }
+      
+      // === Step 4: 比對生日 ===
+      if (!b6DateStr || !normalizedBirthday || b6DateStr !== normalizedBirthday) {
+        return createResponse({ status: "error", code: "VERIFY_ERROR", message: "驗證錯誤：生日與紀錄不符" });
+      }
+      
+      // === Step 5: 驗證成功，寫入主登錄表 ===
+      // 欄位順序: 時間戳記 | 姓名 | 生日 | 教室 | 顯示名稱 | LINE ID | 上課紀錄SheetID
+      sheet.appendRow([timestamp, name, birthday, classroom, displayName, lineId, fileId]);
+      
+      return createResponse({ status: "success", message: "驗證成功，資料寫入完成", fileId: fileId });
     }
     // 3. 讀取上課紀錄
     if (action === 'get_records') {

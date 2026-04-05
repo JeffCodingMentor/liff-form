@@ -414,10 +414,27 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
         });
 
         if (!response.ok) {
-            throw new Error('伺服器錯誤，寫入資料失敗');
+            throw new Error('伺服器錯誤，請稍後再試');
         }
 
-        // 發送註冊完成訊息 (僅限 LINE App 內開啟)
+        const resJson = await response.json();
+        const innerData = resJson.data || {};
+
+        // 處理 GAS 回傳的錯誤碼
+        if (innerData.status === 'error') {
+            if (innerData.code === 'DATA_ERROR') {
+                alert('資料錯誤：找不到您的上課紀錄，請確認姓名與教室是否填寫正確。');
+            } else if (innerData.code === 'VERIFY_ERROR') {
+                alert('驗證錯誤：生日與上課紀錄中的資料不符，請重新確認。');
+            } else {
+                alert('發生錯誤：' + (innerData.message || '未知錯誤'));
+            }
+            btn.disabled = false;
+            btn.innerText = '確認';
+            return;
+        }
+
+        // 驗證成功，發送註冊完成訊息 (僅限 LINE App 內開啟)
         if (liff.isInClient()) {
             const roomName = (classroom === 'I') ? 'Im未來' : 'Jeff Coding';
             liff.sendMessages([{
@@ -426,7 +443,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
             }]).catch(err => console.error("Send message failed:", err));
         }
 
-        // 註冊成功後，直接進入已註冊畫面，不再跳轉
+        // 註冊成功後，直接進入已註冊畫面
         document.getElementById('registrationForm').style.display = 'none';
         
         // 根據剛才選的教室套用主題
