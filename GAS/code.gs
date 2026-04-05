@@ -49,79 +49,88 @@ function doPost(e) {
       var displayName = data.displayName || '';
       var timestamp = new Date();
       
-      // === Step 1: 依姓名+教室搜尋學生的上課紀錄 Google Sheet ===
+      // === Step 1: 依姓名+教室搜完所有候選檔案（同名同姓可能有多個，後續再用生日區分） ===
       var parentFolderId = '1A4SOGVwZCG77rA8lXfGaT1pHXoeJ7n8z';
       var fallbackFolderId = '1mYCVAVWSjn_b0T1yOnF96KakJ5jeQJqU';
-      var targetFile = null;
+      var candidateFiles = [];
       
       if (classroom === 'I') {
         // 教室 I：從主目錄搜尋子目錄，再找其中的檔案
         var primaryFolder = DriveApp.getFolderById(parentFolderId);
         var targetFolder = findFolderByExactName(primaryFolder, name);
         if (targetFolder) {
-          targetFile = findFileByExactName(targetFolder, name);
+          candidateFiles = findAllFilesByExactName(targetFolder, name);
         }
       } else if (classroom === 'J') {
         // 教室 J：直接在備用目錄搜尋檔案
         var fallbackFolder = DriveApp.getFolderById(fallbackFolderId);
-        targetFile = findFileByExactName(fallbackFolder, name);
+        candidateFiles = findAllFilesByExactName(fallbackFolder, name);
       }
       
-      // === Step 2: 找不到檔案 → 資料錯誤 ===
-      if (!targetFile) {
+      // === Step 2: 找不到任何檔案 → 資料錯誤 ===
+      if (candidateFiles.length === 0) {
         return createResponse({ status: "error", code: "DATA_ERROR", message: "資料錯誤：找不到該學生的上課紀錄檔案" });
       }
       
-      var fileId = targetFile.getId();
-      
-      // === Step 3: 讀取 B6 儲存格的生日並格式化 ===
-      var recordSpreadsheet = SpreadsheetApp.openById(fileId);
-      // B6 的生日在學生檔案的【基本資料】分頁
-      var profileSheet = recordSpreadsheet.getSheetByName("基本資料") || recordSpreadsheet.getSheets()[0];
-      var b6Value = profileSheet.getRange("B6").getValue();
-      
-      var b6DateStr = '';
-      if (b6Value instanceof Date && !isNaN(b6Value.getTime())) {
-        // Date 物件 → 格式化為 YYYY-MM-DD
-        b6DateStr = Utilities.formatDate(b6Value, "GMT+8", "yyyy-MM-dd");
-      } else if (typeof b6Value === 'string' && b6Value.trim() !== '') {
-        // 文字型態，嘗試解析各種台灣常見格式
-        var raw = b6Value.trim();
-        // 2010/03/15 or 2010-03-15
-        var m1 = raw.match(/(\d{4})[\-\/](\d{1,2})[\-\/](\d{1,2})/);
-        if (m1) {
-          b6DateStr = m1[1] + '-' + ('0' + m1[2]).slice(-2) + '-' + ('0' + m1[3]).slice(-2);
-        } else {
-          // 2010年3月15日
-          var m2 = raw.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
-          if (m2) {
-            b6DateStr = m2[1] + '-' + ('0' + m2[2]).slice(-2) + '-' + ('0' + m2[3]).slice(-2);
-          }
-        }
-      }
-      
-      // 同樣格式化前端傳來的 birthday (YYYY-MM-DD 應已標準，但做個保護)
+      // 同樣格式化前端傳來的 birthday (YYYY-MM-DD)
       var normalizedBirthday = '';
       var bm = birthday.match(/(\d{4})[\-\/](\d{1,2})[\-\/](\d{1,2})/);
       if (bm) {
         normalizedBirthday = bm[1] + '-' + ('0' + bm[2]).slice(-2) + '-' + ('0' + bm[3]).slice(-2);
       }
       
-      // === Step 4: 比對生日 ===
-      if (!b6DateStr || !normalizedBirthday || b6DateStr !== normalizedBirthday) {
+      // === Step 3 & 4: 逐一比對候選檔案的生日（解決同名問題） ===
+      var matchedFile = null;
+      var lastB6Raw = '';
+      var lastB6Parsed = '';
+      
+      for (var ci = 0; ci < candidateFiles.length; ci++) {
+        var cFile = candidateFiles[ci];
+        var cSpreadsheet = SpreadsheetApp.openById(cFile.getId());
+        var cProfileSheet = cSpreadsheet.getSheetByName("基本資料") || cSpreadsheet.getSheets()[0];
+        var cB6Value = cProfileSheet.getRange("B6").getValue();
+        
+        var cB6DateStr = '';
+        if (cB6Value instanceof Date && !isNaN(cB6Value.getTime())) {
+          cB6DateStr = Utilities.formatDate(cB6Value, "GMT+8", "yyyy-MM-dd");
+        } else if (typeof cB6Value === 'string' && cB6Value.trim() !== '') {
+          var raw = cB6Value.trim();
+          var m1 = raw.match(/(\d{4})[\-\/](\d{1,2})[\-\/](\d{1,2})/);
+          if (m1) {
+            cB6DateStr = m1[1] + '-' + ('0' + m1[2]).slice(-2) + '-' + ('0' + m1[3]).slice(-2);
+          } else {
+            var m2 = raw.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+            if (m2) {
+              cB6DateStr = m2[1] + '-' + ('0' + m2[2]).slice(-2) + '-' + ('0' + m2[3]).slice(-2);
+            }
+          }
+        }
+        lastB6Raw = cB6Value ? cB6Value.toString() : '(空白)';
+        lastB6Parsed = cB6DateStr || '(無法解析)';
+        
+        if (cB6DateStr && normalizedBirthday && cB6DateStr === normalizedBirthday) {
+          matchedFile = cFile;
+          break;
+        }
+      }
+      
+      // === Step 4: 沒有任何檔案生日符合 → 驗證錯誤 ===
+      if (!matchedFile) {
         return createResponse({
           status: "error",
           code: "VERIFY_ERROR",
           message: "驗證錯誤：生日與紀錄不符",
           debug: {
-            b6Raw: b6Value ? b6Value.toString() : '(空白)',
-            b6Parsed: b6DateStr || '(無法解析)',
+            candidatesFound: candidateFiles.length,
+            lastB6Raw: lastB6Raw,
+            lastB6Parsed: lastB6Parsed,
             inputBirthday: birthday,
-            inputNormalized: normalizedBirthday || '(無法解析)',
-            sheetName: profileSheet.getName()
+            inputNormalized: normalizedBirthday || '(無法解析)'
           }
         });
       }
+      
+      var fileId = matchedFile.getId();
       
       // === Step 5: 驗證成功，寫入主登錄表 ===
       // 欄位順序: 時間戳記 | 姓名 | 生日 | 教室 | 顯示名稱 | LINE ID | 上課紀錄SheetID
@@ -151,29 +160,35 @@ function doPost(e) {
         }
       }
 
-      var parentFolderId = '1A4SOGVwZCG77rA8lXfGaT1pHXoeJ7n8z';
-      var fallbackFolderId = '1mYCVAVWSjn_b0T1yOnF96KakJ5jeQJqU';
+      // 若有 sheetId，直接開啟，不需要搜尋（同名同姓問題的根本解決）
+      var recordSpreadsheet = null;
+      var sheetIdFromClient = data.sheetId || '';
       
-      var targetFile = null;
+      if (sheetIdFromClient) {
+        // 已登錄者直接用 ID 開啟
+        recordSpreadsheet = SpreadsheetApp.openById(sheetIdFromClient);
+      } else {
+        // 舊資料（無 SheetID）：退回用姓名搜尋
+        var parentFolderId = '1A4SOGVwZCG77rA8lXfGaT1pHXoeJ7n8z';
+        var fallbackFolderId = '1mYCVAVWSjn_b0T1yOnF96KakJ5jeQJqU';
+        var targetFile = null;
 
-      if (classroom === 'I') {
-        // 第一種情況 (教室 I)：從主目錄搜尋 "子目錄"，再找裡面的檔案
-        var primaryFolder = DriveApp.getFolderById(parentFolderId);
-        var targetFolder = findFolderByExactName(primaryFolder, userName);
-        if (targetFolder) {
-          targetFile = findFileByExactName(targetFolder, userName);
+        if (classroom === 'I') {
+          var primaryFolder = DriveApp.getFolderById(parentFolderId);
+          var targetFolder = findFolderByExactName(primaryFolder, userName);
+          if (targetFolder) {
+            targetFile = findFileByExactName(targetFolder, userName);
+          }
+        } else if (classroom === 'J') {
+          var fallbackFolder = DriveApp.getFolderById(fallbackFolderId);
+          targetFile = findFileByExactName(fallbackFolder, userName);
         }
-      } else if (classroom === 'J') {
-        // 第二種情況 (教室 J)：直接到備用目錄搜尋 "檔案"
-        var fallbackFolder = DriveApp.getFolderById(fallbackFolderId);
-        targetFile = findFileByExactName(fallbackFolder, userName);
-      }
 
-      if (!targetFile) {
-        return createResponse({ status: "success", records: [], message: "找不到該學生的上課資料檔案" });
+        if (!targetFile) {
+          return createResponse({ status: "success", records: [], message: "找不到該學生的上課資料檔案" });
+        }
+        recordSpreadsheet = SpreadsheetApp.openById(targetFile.getId());
       }
-      
-      var recordSpreadsheet = SpreadsheetApp.openById(targetFile.getId());
       var sheetRecord = recordSpreadsheet.getSheetByName("上課紀錄");
       if (!sheetRecord) {
          return createResponse({ status: "success", records: [], message: "找不到上課紀錄工作表" });
@@ -309,10 +324,23 @@ function createResponse(payload) {
 }
 
 /**
- * 在資料夾中以精確名稱搜尋 Google Sheets 檔案。
- * 策略：Drive API 用 contains 預先過濾，再用 regex 確認 '_name' 後方不緊接中文字，
- * 以避免「陳希」誤配「陳希望」的問題。
+ * 回傳資料夾中所有精確名稱的 Google Sheets 檔案（陣列）。
+ * 用於 submit 驗證：同名同姓時會有多個候選，需全部取回再用生日區分。
  */
+function findAllFilesByExactName(folder, name) {
+  var regex = new RegExp('_' + name + '([^\u4e00-\u9fff]|$)');
+  var files = folder.searchFiles(
+    "title contains '_" + name + "' and mimeType = 'application/vnd.google-apps.spreadsheet'"
+  );
+  var result = [];
+  while (files.hasNext()) {
+    var f = files.next();
+    if (regex.test(f.getName())) {
+      result.push(f);
+    }
+  }
+  return result;
+}
 function findFileByExactName(folder, name) {
   // \u4e00-\u9fff 涵蓋常用 CJK 中文字範圍
   var regex = new RegExp('_' + name + '([^\u4e00-\u9fff]|$)');

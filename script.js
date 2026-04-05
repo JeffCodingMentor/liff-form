@@ -30,8 +30,8 @@ async function init() {
                 document.getElementById('welcomeMessage').style.display = 'block';
                 document.getElementById('status').innerText = ''; // 清除狀態文字
                 
-                // 讀取上課紀錄
-                fetchClassRecords(userData.name);
+                // 讀取上課紀錄（傳入 sheetId 可直接開啟檔案、避免同名問題）
+                fetchClassRecords(userData.name, userData.sheetId || '');
             } else {
                 document.getElementById('registrationForm').style.display = 'block';
                 document.getElementById('status').innerText = '準備就緒，請填寫資料';
@@ -59,7 +59,7 @@ async function checkUserExists(userId) {
     }
 }
 
-async function fetchClassRecords(userName) {
+async function fetchClassRecords(userName, sheetId) {
     const container = document.getElementById('classRecordsContainer');
     const selectorContainer = document.getElementById('cycleSelectorContainer');
     const loading = document.getElementById('recordsLoading');
@@ -84,7 +84,8 @@ async function fetchClassRecords(userName) {
             method: 'POST',
             body: JSON.stringify({
                 action: 'get_records',
-                name: userName
+                name: userName,
+                sheetId: sheetId || ''
             })
         });
         const resData = await response.json();
@@ -457,8 +458,8 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
         document.getElementById('welcomeMessage').style.display = 'block';
         document.getElementById('status').innerText = '';
         
-        // 讀取上課紀錄
-        fetchClassRecords(inputName);
+        // 讀取上課紀錄（用註冊回傳的 fileId 直接開啟）
+        fetchClassRecords(inputName, innerData.fileId || '');
 
     } catch (err) {
         alert('發生錯誤: ' + err);
