@@ -83,9 +83,9 @@ function doPost(e) {
       
       // === Step 3: 讀取 B6 儲存格的生日並格式化 ===
       var recordSpreadsheet = SpreadsheetApp.openById(fileId);
-      // 嘗試依序開啟：上課紀錄 → 第一個工作表
-      var firstSheet = recordSpreadsheet.getSheetByName("上課紀錄") || recordSpreadsheet.getSheets()[0];
-      var b6Value = firstSheet.getRange("B6").getValue();
+      // B6 的生日在學生檔案的【基本資料】分頁
+      var profileSheet = recordSpreadsheet.getSheetByName("基本資料") || recordSpreadsheet.getSheets()[0];
+      var b6Value = profileSheet.getRange("B6").getValue();
       
       var b6DateStr = '';
       if (b6Value instanceof Date && !isNaN(b6Value.getTime())) {
@@ -116,7 +116,18 @@ function doPost(e) {
       
       // === Step 4: 比對生日 ===
       if (!b6DateStr || !normalizedBirthday || b6DateStr !== normalizedBirthday) {
-        return createResponse({ status: "error", code: "VERIFY_ERROR", message: "驗證錯誤：生日與紀錄不符" });
+        return createResponse({
+          status: "error",
+          code: "VERIFY_ERROR",
+          message: "驗證錯誤：生日與紀錄不符",
+          debug: {
+            b6Raw: b6Value ? b6Value.toString() : '(空白)',
+            b6Parsed: b6DateStr || '(無法解析)',
+            inputBirthday: birthday,
+            inputNormalized: normalizedBirthday || '(無法解析)',
+            sheetName: profileSheet.getName()
+          }
+        });
       }
       
       // === Step 5: 驗證成功，寫入主登錄表 ===
