@@ -354,9 +354,9 @@ function renderCalendar(classDates, startDateStr, endDateStr) {
                 fw = 'bold';
                 br = '50%';
                 if (isFuture) {
-                    // 預約上課：主題色空心圓圈
+                    // 預約上課：主題色空心圓圈，文字顏色與一般日期相同 (#444)
                     bg = 'transparent';
-                    color = 'var(--primary-color)';
+                    color = '#444';
                     border = '2px solid var(--primary-color)';
                 } else {
                     // 過去或今日上課：實心底色
