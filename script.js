@@ -190,6 +190,9 @@ function updateDisplay(index) {
     const cycle = globalCycles[index];
     if (!cycle) return;
 
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
     // 1. 繪製月曆
     renderCalendar(cycle.classDates, cycle.start, cycle.end);
 
@@ -217,6 +220,18 @@ function updateDisplay(index) {
         matchedRecords.forEach(r => {
             const tr = document.createElement('tr');
             
+            // 若上課日期在今天之後，代表「預約」上課，整列以淺灰色顯示
+            let isFuture = false;
+            if (r.date) {
+                let rDate = new Date(r.date);
+                if (!isNaN(rDate.getTime()) && rDate > todayEnd) {
+                    isFuture = true;
+                }
+            }
+            if (isFuture) {
+                tr.style.color = '#9e9e9e';
+            }
+            
             const tdI = document.createElement('td');
             tdI.style.padding = '8px';
             tdI.style.borderBottom = '1px solid #eee';
@@ -239,8 +254,29 @@ function updateDisplay(index) {
         }
     }
 
+    // 檢查目前週期是否包含任何預約（明天及之後）的上課
+    let hasReservation = false;
+    if (cycle.classDates && cycle.classDates.length > 0) {
+        for (const dStr of cycle.classDates) {
+            const d = new Date(dStr);
+            if (!isNaN(d.getTime()) && d > todayEnd) {
+                hasReservation = true;
+                break;
+            }
+        }
+    }
+    if (!hasReservation && matchedRecords.length > 0) {
+        for (const r of matchedRecords) {
+            const d = new Date(r.date);
+            if (!isNaN(d.getTime()) && d > todayEnd) {
+                hasReservation = true;
+                break;
+            }
+        }
+    }
+
     // 3. 顯示繳費紀錄
-    renderPaymentRecords(cycle);
+    renderPaymentRecords(cycle, hasReservation);
 }
 
 function renderCalendar(classDates, startDateStr, endDateStr) {
@@ -275,6 +311,9 @@ function renderCalendar(classDates, startDateStr, endDateStr) {
         return;
     }
 
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
     let startYear = sDate.getFullYear();
     let startMonth = sDate.getMonth();
     let endYear = eDate.getFullYear();
@@ -302,14 +341,32 @@ function renderCalendar(classDates, startDateStr, endDateStr) {
         for (let day = 1; day <= lastDay.getDate(); day++) {
             const dateStr = currY + '-' + (currM + 1) + '-' + day;
             const hasClass = classDatesSet.has(dateStr);
-            // 上課日期標上不一樣的底色 (使用 CSS 變數支援主題切換)
-            const bg = hasClass ? 'var(--cal-bg)' : 'transparent';
-            const color = hasClass ? 'var(--cal-text)' : '#444';
-            const fw = hasClass ? 'bold' : 'normal';
-            const br = hasClass ? '50%' : '0';
+            const dayDate = new Date(currY, currM, day);
+            const isFuture = dayDate > todayEnd;
+
+            let bg = 'transparent';
+            let color = '#444';
+            let fw = 'normal';
+            let br = '0';
+            let border = '2px solid transparent';
+
+            if (hasClass) {
+                fw = 'bold';
+                br = '50%';
+                if (isFuture) {
+                    // 預約上課：主題色空心圓圈
+                    bg = 'transparent';
+                    color = 'var(--primary-color)';
+                    border = '2px solid var(--primary-color)';
+                } else {
+                    // 過去或今日上課：實心底色
+                    bg = 'var(--cal-bg)';
+                    color = 'var(--cal-text)';
+                }
+            }
             
             html += `<td style="padding: 3px;">
-                        <div style="width: 26px; height: 26px; line-height: 26px; margin: 0 auto; background: ${bg}; color: ${color}; font-weight: ${fw}; border-radius: ${br}; font-size: 14px;">${day}</div>
+                        <div style="width: 26px; height: 26px; line-height: 22px; box-sizing: border-box; margin: 0 auto; background: ${bg}; color: ${color}; font-weight: ${fw}; border-radius: ${br}; border: ${border}; font-size: 14px;">${day}</div>
                      </td>`;
                      
             currentDow++;
@@ -337,7 +394,7 @@ function renderCalendar(classDates, startDateStr, endDateStr) {
     calendarEl.style.display = 'block';
 }
 
-function renderPaymentRecords(payment) {
+function renderPaymentRecords(payment, hasReservation = false) {
     const container = document.getElementById('paymentRecordsContainer');
     if (!container || !payment) return;
 
@@ -345,15 +402,21 @@ function renderPaymentRecords(payment) {
     const startDisp = (payment.start || '').replace(/-/g, '/');
     const endDisp = (payment.end || '').replace(/-/g, '/');
     document.getElementById('payMonth').innerText = `${startDisp} ~ ${endDisp}`;
-    document.getElementById('payTotal').innerText = '$' + (payment.total !== undefined ? payment.total.toLocaleString() : '0');
+    
+    const totalEl = document.getElementById('payTotal');
+    totalEl.innerText = '$' + (payment.total !== undefined ? payment.total.toLocaleString() : '0');
+    totalEl.style.color = hasReservation ? '#9e9e9e' : '';
     
     const balanceEl = document.getElementById('payBalance');
     const balance = payment.balance || 0;
     balanceEl.innerText = '$' + balance.toLocaleString();
+
     if (balance < 0) {
-        balanceEl.style.color = '#d32f2f'; // 負值顯示紅色
+        // 負值：有預約時顯示淺紅色，無預約顯示正常紅色
+        balanceEl.style.color = hasReservation ? '#ef9a9a' : '#d32f2f';
     } else {
-        balanceEl.style.color = ''; // 正值或零還原顏色
+        // 零或正值：有預約時顯示淺灰色，無預約還原預設顏色
+        balanceEl.style.color = hasReservation ? '#9e9e9e' : '';
     }
 
     const actualArea = document.getElementById('actualPaymentArea');
