@@ -36,21 +36,24 @@ LINE LIFF 學習繳費紀錄查詢系統 - 管理員功能
 
 ### 3. 雲端硬碟掃描邏輯 (`scanStudentFiles`)
 * **資料夾 ID**：
-  * 教室 I (`parentFolderId`)：`1A4SOGVwZCG77rA8lXfGaT1pHXoeJ7n8z`
+  * 教室 I (`parentFolderId`)：`1A4SOGVwZCG77rA8lXfGaT1pHXoeJ7n8z`（紀錄表-Im）
   * 教室 J (`fallbackFolderId`)：`1mYCVAVWSjn_b0T1yOnF96KakJ5jeQJqU`
-* **掃描策略**：
-  * 先讀取主表 `LINE LIFF member` 已註冊的學生名單作為基底（取得精確的 `name`, `classroom`, `sheetId`）。
-  * 掃描教室 I 子資料夾與試算表檔案。
+* **掃描策略與目錄排除**：
+  * 先讀取主表已註冊的學生名單作為基底（取得精確的 `name`, `classroom`, `sheetId`）。
+  * 掃描教室 I 子資料夾時，**嚴格排除「紀錄表-Im\試聽紀錄」與「紀錄表-Im\Template」目錄**（資料夾名稱符合 `試聽紀錄` 或 `Template` 者一律略過不搜尋）。
   * 掃描教室 J 試算表檔案。
   * 從檔名解析學生姓名（常見命名如 `代號_姓名_上課紀錄` 或 `_姓名`）。
   * 去重合併後依教室、姓名排序。
 
 ### 4. 前端介面與互動 (UI/UX)
 * **管理員學生選單 (`#adminArea`)**：
-  * 標題顯示「管理員控制台」與學生統計數量。
+  * **簡潔介面**：移除最上方「管理員控制台」標題，移除最下方「關閉系統」按鈕，由統計列與篩選列開始。
+  * **主題色彩區隔**：
+    * **Jeff Coding 篩選按鈕**：以藍色底風格顯示（符合 Jeff Coding 品牌色）。
+    * **Jeff Coding 學生卡片**：清單中 Jeff Coding 教室的學生卡片一律以藍色底顯示（`#e7f3ff`、邊框 `#b8daff`），直觀區分教室。
   * 教室過濾按鈕（全部 / Im未來 / Jeff Coding）與「即時姓名搜尋輸入框」。
   * 學生清單卡片：點擊學生即可開啟該學生紀錄。
-  * 底部按鈕：「🔄 重新整理名單」與「關閉系統」。
+  * 底部按鈕：「🔄 重新整理名單」。
 * **檢視學生紀錄**：
   * 自動套用該學生的教室主題（Im未來為綠色主題、Jeff Coding 為藍色主題 `blue-theme`）。
   * 呼叫既有 `fetchClassRecords(student.name, student.sheetId)` 渲染動態月曆、上課紀錄與繳費明細。

@@ -381,6 +381,7 @@ function scanStudentFiles() {
     });
   }
   function scanFolder(folder, classroom, recursive) {
+    if (/試聽紀錄|template/i.test(folder.getName())) return;
     var files = folder.getFilesByType(MimeType.GOOGLE_SHEETS);
     while (files.hasNext()) {
       var file = files.next();

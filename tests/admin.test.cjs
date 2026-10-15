@@ -19,8 +19,8 @@ class Sheet {
 }
 const iterator = values => { let i = 0; return { hasNext: () => i < values.length, next: () => values[i++] }; };
 const file = (id, name) => ({ getId: () => id, getName: () => name });
-const folder = (files, children = []) => ({ getFilesByType: () => iterator(files), getFolders: () => iterator(children) });
-function backend() {
+const folder = (files, children = [], name = '學生紀錄') => ({ getName: () => name, getFilesByType: () => iterator(files), getFolders: () => iterator(children) });
+function backend(excludedFolders = []) {
     const sheets = { 'LINE LIFF member': new Sheet([
         ['時間', '姓名', '生日', '教室', '顯示名稱', 'LINE ID', 'SheetID'],
         ['', '精確姓名', '', 'J', '', 'student', 'registered'],
@@ -45,7 +45,7 @@ function backend() {
             scans++;
             if (failScan) throw new Error('Drive unavailable');
             return id.startsWith('1A4') ? folder([file('registered', '001_錯誤姓名_上課紀錄'), file('skip', '學生範本'), file('misc', '行政報表')],
-                [folder([file('new', '002_小明_上課紀錄'), file('old', '_舊生')])]) : folder([file('other', '_小明')]);
+                [folder([file('new', '002_小明_上課紀錄'), file('old', '_舊生')], excludedFolders)]) : folder([file('other', '_小明')]);
         } }
     });
     vm.runInContext(source('GAS/code.gs'), context);
@@ -96,6 +96,20 @@ test('an existing empty cache scans and non-boolean refresh does not rescan popu
     assert.equal(b.scans(), 2);
 });
 
+test('scan skips trial and template folders before reading files or descendants', () => {
+    const excludedFolders = ['試聽紀錄', '歷年試聽紀錄備份', 'Template', '舊tEmPlAtE備份'].map(name => ({
+        getName: () => name,
+        getFilesByType: () => assert.fail(`must not read files in ${name}`),
+        getFolders: () => assert.fail(`must not read descendants of ${name}`)
+    }));
+    const b = backend(excludedFolders);
+    for (const refresh of [false, true]) {
+        const result = b.call({ action: 'get_students', userId: 'admin', refresh });
+        assert.equal(result.status, 'success', result.message);
+        assert.deepEqual(result.students.map(s => s.sheetId).sort(), ['new', 'old', 'other', 'registered']);
+    }
+});
+
 function frontend() {
     const elements = {};
     function element() {
@@ -134,8 +148,11 @@ test('admin login, classroom filter, live search, refresh, theme and back with s
     await f.context.init();
     assert.equal(e.adminArea.style.display, 'block');
     assert.equal(e.adminStudentList.children.length, 2);
+    assert.equal(e.adminStudentList.children[0].classList.contains('classroom-j'), false);
+    assert.equal(e.adminStudentList.children[1].classList.contains('classroom-j'), true);
     f.filters[2].fire('click');
     assert.equal(e.adminStudentList.children.length, 1);
+    assert.equal(e.adminStudentList.children[0].classList.contains('classroom-j'), true);
     e.adminSearch.value = '小明'; e.adminSearch.fire('input');
     assert.equal(e.adminStudentList.children[0].textContent, '沒有符合條件的學生');
     e.adminSearch.value = ''; e.adminSearch.fire('input');
@@ -185,4 +202,18 @@ test('roster network failure preserves cards and allows retry', async () => {
     f.context.fetch = originalFetch;
     await f.context.loadAdminStudentList(true);
     assert.equal(f.elements.adminListStatus.innerText, '');
+});
+
+test('admin menu is simplified and Jeff Coding cards and filter use blue styles', () => {
+    const html = source('index.html');
+    const adminArea = html.split('<div id="adminArea"')[1].split('<div id="welcomeMessage"')[0];
+    assert.doesNotMatch(adminArea, /<h2>|管理員控制台|adminCloseBtn|關閉系統/);
+    assert.match(adminArea, /id="adminRefreshBtn"/);
+    assert.doesNotMatch(source('script.js'), /adminCloseBtn/);
+    const cardStyle = html.match(/\.admin-student-card\.classroom-j\s*\{([^}]+)\}/)[1];
+    assert.match(cardStyle, /background:\s*#e7f3ff/);
+    assert.match(cardStyle, /border:\s*1px solid #b8daff/);
+    assert.match(cardStyle, /color:\s*#004085/);
+    assert.match(html, /\.admin-filters button\[data-classroom="J"\]\[aria-pressed="false"\]\s*\{[^}]*background:\s*#e7f3ff/);
+    assert.match(html, /\.admin-filters button\[data-classroom="J"\]\[aria-pressed="true"\]\s*\{[^}]*background:\s*#007bff/);
 });

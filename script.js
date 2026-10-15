@@ -114,6 +114,7 @@ function renderAdminStudentList() {
         const card = document.createElement('button');
         card.type = 'button';
         card.className = 'admin-student-card';
+        if (student.classroom === 'J') card.classList.add('classroom-j');
         card.textContent = student.name;
         const classroom = document.createElement('small');
         classroom.textContent = student.classroom === 'J' ? 'Jeff Coding' : 'Im未來';
@@ -157,7 +158,6 @@ document.querySelectorAll('[data-classroom]').forEach(button => {
 });
 document.getElementById('adminRefreshBtn').addEventListener('click', () => loadAdminStudentList(true));
 document.getElementById('adminBackToMenuBtn').addEventListener('click', showAdminMenu);
-document.getElementById('adminCloseBtn').addEventListener('click', () => liff.closeWindow());
 
 async function fetchClassRecords(userName, sheetId) {
     const requestId = ++recordsRequestId;

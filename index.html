@@ -114,9 +114,13 @@
         .admin-filters { display: flex; gap: 6px; margin-bottom: 16px; }
         .admin-filters button { padding: 10px 4px; font-size: 14px; }
         .admin-filters button[aria-pressed="false"] { background: #edf2ed; color: #333; }
+        .admin-filters button[data-classroom="J"][aria-pressed="false"] { background: #e7f3ff; color: #004085; border: 1px solid #b8daff; }
+        .admin-filters button[data-classroom="J"][aria-pressed="true"] { background: #007bff; color: #fff; border: 1px solid #007bff; }
         #adminStudentList { max-height: 45vh; overflow-y: auto; margin: 12px 0; }
         .admin-student-card { text-align: left; background: var(--bg-light); color: #333; border: 1px solid var(--border-light); }
         .admin-student-card:hover { background: var(--cal-bg); }
+        .admin-student-card.classroom-j { background: #e7f3ff; border: 1px solid #b8daff; color: #004085; }
+        .admin-student-card.classroom-j small { color: #004085; }
         .admin-student-card small { display: block; margin-top: 4px; color: #666; }
         #adminBackToMenuBtn { position: sticky; top: 8px; z-index: 1; margin-bottom: 12px; }
         #adminListStatus { color: #666; font-size: 14px; }
@@ -151,7 +155,6 @@
         </div>
 
         <div id="adminArea" style="display: none;">
-            <h2>管理員控制台</h2>
             <p id="adminStudentCount" aria-live="polite">學生總數：0</p>
             <div class="admin-filters" role="group" aria-label="教室篩選">
                 <button type="button" data-classroom="all" aria-pressed="true">全部</button>
@@ -163,7 +166,6 @@
             <p id="adminListStatus" role="status"></p>
             <div id="adminStudentList" aria-label="學生清單"></div>
             <button type="button" id="adminRefreshBtn">🔄 重新整理名單</button>
-            <button type="button" id="adminCloseBtn">關閉系統</button>
         </div>
 
         <div id="welcomeMessage" style="display: none; text-align: center;">
