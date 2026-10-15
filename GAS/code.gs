@@ -3,7 +3,7 @@ function doPost(e) {
     var data = JSON.parse(e.postData.contents);
     var action = data.action;
     var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = spreadsheet.getSheetByName('LINE LIFF member');
+    var sheet = getMemberSheet(spreadsheet);
     var adminUserId = PropertiesService.getScriptProperties().getProperty('ADMIN_USER_ID');
     var isAdmin = typeof data.userId === 'string' && !!adminUserId &&
       !!adminUserId.trim() && data.userId.trim() === adminUserId.trim();
@@ -354,9 +354,22 @@ function doPost(e) {
   }
 }
 
+function getMemberSheet(spreadsheet) {
+  var target = spreadsheet.getSheetByName('LINE LIFF member');
+  if (target) return target;
+  var sheets = spreadsheet.getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].getName() !== '學生名冊快取') {
+      return sheets[i];
+    }
+  }
+  return sheets[0];
+}
+
 function scanStudentFiles() {
-  var memberSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('LINE LIFF member');
-  if (!memberSheet) throw new Error('找不到 LINE LIFF member 工作表');
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var memberSheet = getMemberSheet(spreadsheet);
+  if (!memberSheet) throw new Error('找不到學生登錄工作表');
   var byId = Object.create(null);
   if (memberSheet.getLastRow() >= 2) {
     memberSheet.getRange(2, 1, memberSheet.getLastRow() - 1, 7).getValues().forEach(function (row) {

@@ -30,6 +30,11 @@ function backend() {
     const context = vm.createContext({
         SpreadsheetApp: { flush() {}, getActiveSpreadsheet: () => ({
             getSheetByName: name => sheets[name],
+            getSheets: () => Object.keys(sheets).map(name => {
+                const s = sheets[name];
+                s.getName = () => name;
+                return s;
+            }),
             insertSheet: name => (sheets[name] = new Sheet())
         }) },
         PropertiesService: { getScriptProperties: () => ({ getProperty: () => adminId }) },
