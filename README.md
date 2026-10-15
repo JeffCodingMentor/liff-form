@@ -115,16 +115,26 @@ sequenceDiagram
 ---
 
 ## 🔑 環境變數與關鍵配置
+ 
+- **Netlify 專案（Site）名稱**：**`liff-test-page`**
+- **Netlify 站點網址**：**https://liff-test-page.netlify.app**
+- **Netlify 後台管理連結**：https://app.netlify.com/sites/liff-test-page
+- **關聯的 GitHub 倉庫**：[JeffCodingMentor/liff-form](https://github.com/JeffCodingMentor/liff-form) (`main` 分支自動觸發部署)
+- **關聯的 LINE LIFF ID**：`2009406277-fAYDHQN4`（其 LINE Developers Console 的 Endpoint URL 正是導向至 `https://liff-test-page.netlify.app/`）
+- **最新 GAS_URL（固定 Web App 部署網址）**：
+  `https://script.google.com/macros/s/AKfycbwMpcyo_8KVlHKUdHkSutk4KMjm-Y-IIy-jgLJoCJDEv7wrdsiZv2uqNHFvik1qXIoPNQ/exec`
+  （Deployment ID: `AKfycbwMpcyo_8KVlHKUdHkSutk4KMjm-Y-IIy-jgLJoCJDEv7wrdsiZv2uqNHFvik1qXIoPNQ`）
 
 | 配置項目 | 檔案位置 / 環境 | 說明 |
 | :--- | :--- | :--- |
-| `liffId` | `script.js` | LINE LIFF App ID (例如 `2009406277-fAYDHQN4`) |
-| `oaId` | `script.js` | LINE 官方帳號 ID (例如 `@838phhvg`) |
+| `liffId` | `script.js` | LINE LIFF App ID (`2009406277-fAYDHQN4`) |
+| `oaId` | `script.js` | LINE 官方帳號 ID (`@838phhvg`) |
 | Netlify 專案名稱 | Netlify Dashboard | `liff-test-page` |
 | Netlify 網站網址 | Netlify / LINE Endpoint | `https://liff-test-page.netlify.app` |
-| `GAS_URL` | Netlify Console 環境變數 | Google Apps Script 部署之 Web App 執行網址 |
+| `GAS_URL` | Netlify Console 環境變數 | Google Apps Script 部署之 Web App 執行網址 (固定 Deployment ID) |
 | 主登錄表 | Google 雲端硬碟 | 試算表 `LINE LIFF member` (ID: `1uufBWRzlxPNJKZbjo4yE-TJD3LWqxHIJj1zQg5__xq4`) |
 | 教室目錄 | `GAS/code.gs` | 教室 I（Im未來）目錄 ID: `1A4SOGVwZCG77rA8lXfGaT1pHXoeJ7n8z`<br>教室 J（Jeff Coding）目錄 ID: `1mYCVAVWSjn_b0T1yOnF96KakJ5jeQJqU` |
+| GAS 專案 ID | `.clasp.json` | `1_zsFdWKyMpXbFPtxPoXegKgX2mHhUc3ijwx4UiYjJmBh7PYZSOsIX00V` |
 
 ---
 
