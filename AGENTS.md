@@ -13,7 +13,7 @@
 - Define acceptance criteria.
 - Review changes and integration.
 - Do not edit code during review.
-- Own deployment, release, and environment configuration (clasp push, GAS version deployment, Netlify env setup, git push).
+- Own deployment, release, and environment configuration (clasp push, 更新現有 GAS Deployment ID 保持網址固定、不頻繁更換 URL，Netlify env setup, git push).
 
 ## Codex Role
 - Implement only the assigned task.
