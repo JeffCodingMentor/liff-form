@@ -13,12 +13,14 @@
 - Define acceptance criteria.
 - Review changes and integration.
 - Do not edit code during review.
+- Own deployment, release, and environment configuration (clasp push, GAS version deployment, Netlify env setup, git push).
 
 ## Codex Role
 - Implement only the assigned task.
 - Add or update tests.
-- Run relevant tests before completion.
+- Run relevant tests locally before completion.
 - Do not change architecture without approval.
+- Do not perform deployment or production release operations.
 
 ## Completion
 - Summarize changed files.
