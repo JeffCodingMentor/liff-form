@@ -3,6 +3,11 @@ const oaId = '@838phhvg';
 
 let globalCycles = [];
 let globalClassRecords = [];
+let isCurrentAdmin = false;
+let currentProfile = null;
+let adminStudents = [];
+let adminClassroom = 'all';
+let recordsRequestId = 0;
 
 async function init() {
     try {
@@ -14,11 +19,17 @@ async function init() {
             
             // 取得使用者 Profile 並檢查是否已註冊
             const profile = await liff.getProfile();
+            currentProfile = profile;
+            console.log('LINE userId:', profile.userId);
             const userData = await checkUserExists(profile.userId);
             
             document.getElementById('loadingArea').style.display = 'none';
             
-            if (userData && userData.exists) {
+            if (userData && userData.isAdmin === true) {
+                isCurrentAdmin = true;
+                showAdminMenu();
+                await loadAdminStudentList(false);
+            } else if (userData && userData.exists) {
                 // 在讀取詳細資料前，先根據 "教室" 決定顏色風格
                 if (userData.classroom === 'J') {
                     document.body.classList.add('blue-theme');
@@ -59,7 +70,102 @@ async function checkUserExists(userId) {
     }
 }
 
+async function loadAdminStudentList(forceRefresh) {
+    if (!isCurrentAdmin || !currentProfile) return;
+    const button = document.getElementById('adminRefreshBtn');
+    if (button.disabled) return;
+    button.disabled = true;
+    const status = document.getElementById('adminListStatus');
+    status.innerText = forceRefresh ? '正在重新掃描學生名冊...' : '正在載入學生名冊...';
+    try {
+        const response = await fetch('/.netlify/functions/submit-form', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'get_students', userId: currentProfile.userId, refresh: forceRefresh === true })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.data || result.data.status !== 'success' || !Array.isArray(result.data.students)) {
+            throw new Error(result.data?.message || result.error || '名冊回應格式異常');
+        }
+        adminStudents = result.data.students;
+        status.innerText = '';
+        renderAdminStudentList();
+    } catch (error) {
+        status.innerText = '名冊載入失敗：' + error.message + '。請按重新整理重試。';
+    } finally {
+        button.disabled = false;
+    }
+}
+
+function renderAdminStudentList() {
+    if (!isCurrentAdmin) return;
+    const keyword = document.getElementById('adminSearch').value.trim().toLocaleLowerCase();
+    const students = adminStudents.filter(student =>
+        (adminClassroom === 'all' || student.classroom === adminClassroom) &&
+        student.name.toLocaleLowerCase().includes(keyword));
+    document.getElementById('adminStudentCount').innerText = `學生總數：${adminStudents.length}（顯示 ${students.length} 位）`;
+    const list = document.getElementById('adminStudentList');
+    list.replaceChildren();
+    if (!students.length) {
+        const empty = document.createElement('p');
+        empty.textContent = adminStudents.length ? '沒有符合條件的學生' : '目前沒有學生資料';
+        list.appendChild(empty);
+    }
+    students.forEach(student => {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'admin-student-card';
+        card.textContent = student.name;
+        const classroom = document.createElement('small');
+        classroom.textContent = student.classroom === 'J' ? 'Jeff Coding' : 'Im未來';
+        card.appendChild(classroom);
+        card.addEventListener('click', () => viewStudentRecords(student));
+        list.appendChild(card);
+    });
+}
+
+function showAdminMenu() {
+    if (!isCurrentAdmin) return;
+    ++recordsRequestId; // 返回時，忽略仍在傳輸的學生紀錄。
+    document.getElementById('welcomeMessage').style.display = 'none';
+    document.getElementById('adminBackToMenuBtn').style.display = 'none';
+    document.getElementById('registrationForm').style.display = 'none';
+    document.getElementById('adminArea').style.display = 'block';
+    document.getElementById('status').innerText = '';
+    document.body.classList.remove('blue-theme');
+}
+
+function viewStudentRecords(student) {
+    if (!isCurrentAdmin) return;
+    document.getElementById('adminArea').style.display = 'none';
+    document.getElementById('welcomeMessage').style.display = 'block';
+    document.getElementById('adminBackToMenuBtn').style.display = 'block';
+    document.body.classList.toggle('blue-theme', student.classroom === 'J');
+    document.getElementById('regName').innerText = student.name;
+    return fetchClassRecords(student.name, student.sheetId);
+}
+
+document.getElementById('adminSearch').addEventListener('input', renderAdminStudentList);
+document.querySelectorAll('[data-classroom]').forEach(button => {
+    button.addEventListener('click', () => {
+        if (!isCurrentAdmin) return;
+        adminClassroom = button.dataset.classroom;
+        document.querySelectorAll('[data-classroom]').forEach(filter => {
+            filter.setAttribute('aria-pressed', String(filter === button));
+        });
+        renderAdminStudentList();
+    });
+});
+document.getElementById('adminRefreshBtn').addEventListener('click', () => loadAdminStudentList(true));
+document.getElementById('adminBackToMenuBtn').addEventListener('click', showAdminMenu);
+document.getElementById('adminCloseBtn').addEventListener('click', () => liff.closeWindow());
+
 async function fetchClassRecords(userName, sheetId) {
+    const requestId = ++recordsRequestId;
+    globalCycles = [];
+    globalClassRecords = [];
+    ['calendar', 'recordsTable', 'paymentRecordsContainer'].forEach(id => {
+        document.getElementById(id).style.display = 'none';
+    });
     const container = document.getElementById('classRecordsContainer');
     const selectorContainer = document.getElementById('cycleSelectorContainer');
     const loading = document.getElementById('recordsLoading');
@@ -89,7 +195,8 @@ async function fetchClassRecords(userName, sheetId) {
             })
         });
         const resData = await response.json();
-        console.log("Response Data API:", resData); // [DEBUG LOG]
+        if (requestId !== recordsRequestId) return;
+        if (!response.ok || resData.data?.status === 'error') throw new Error('無法讀取紀錄');
         
         if (loading) loading.style.display = 'none';
         
@@ -99,7 +206,7 @@ async function fetchClassRecords(userName, sheetId) {
             globalClassRecords = resData.data.classRecords || [];
             
             // 再次確認主題 (以資料回傳為準)
-            if (resData.data.classroom) {
+            if (!isCurrentAdmin && resData.data.classroom) {
                 if (resData.data.classroom === 'J') {
                     document.body.classList.add('blue-theme');
                 } else {
@@ -149,6 +256,7 @@ async function fetchClassRecords(userName, sheetId) {
             }
         }
     } catch (err) {
+        if (requestId !== recordsRequestId) return;
         console.error("Fetch records failed:", err);
         if (loading) loading.style.display = 'none';
         document.getElementById('recordsTable') && (document.getElementById('recordsTable').style.display = 'none');

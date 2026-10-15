@@ -1,8 +1,43 @@
 function doPost(e) {
   try {
     var data = JSON.parse(e.postData.contents);
-    var action = data.action; // 'check' or 'submit'
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var action = data.action;
+    var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = spreadsheet.getSheetByName('LINE LIFF member');
+    var adminUserId = PropertiesService.getScriptProperties().getProperty('ADMIN_USER_ID');
+    var isAdmin = typeof data.userId === 'string' && !!adminUserId &&
+      !!adminUserId.trim() && data.userId.trim() === adminUserId.trim();
+
+    if (action === 'get_students') {
+      if (!isAdmin) throw new Error('權限不足：僅管理員可讀取學生名冊');
+      var lock = LockService.getScriptLock();
+      lock.waitLock(30000);
+      try {
+        var cache = spreadsheet.getSheetByName('學生名冊快取');
+        if (!cache) {
+          cache = spreadsheet.insertSheet('學生名冊快取');
+          cache.getRange(1, 1, 1, 4).setValues([['學生姓名', '所屬教室', '檔案ID', '更新時間']]);
+        }
+        var students;
+        if (data.refresh === true || cache.getLastRow() < 2) {
+          // 掃描成功後才取代舊快取，避免掃描失敗遺失名冊。
+          students = scanStudentFiles();
+          var updated = new Date();
+          if (cache.getLastRow() >= 2) cache.getRange(2, 1, cache.getLastRow() - 1, 4).clearContent();
+          if (students.length) cache.getRange(2, 1, students.length, 4).setValues(students.map(function (student) {
+            return [student.name, student.classroom, student.sheetId, updated];
+          }));
+          SpreadsheetApp.flush();
+        } else {
+          students = cache.getRange(2, 1, cache.getLastRow() - 1, 4).getValues()
+            .filter(function (row) { return row[0] && row[2]; })
+            .map(function (row) { return { name: row[0], classroom: row[1], sheetId: row[2] }; });
+        }
+        return createResponse({ status: 'success', students: students });
+      } finally {
+        lock.releaseLock();
+      }
+    }
     
     // 1. 檢查使用者是否存在
     if (action === 'check') {
@@ -10,6 +45,7 @@ function doPost(e) {
       if (!userIdToCheck) {
         throw new Error("Missing userId for check");
       }
+      if (isAdmin) return createResponse({ exists: true, isAdmin: true, name: '管理員', classroom: 'I', sheetId: '' });
       
       // 取得所有資料 (從第 1 欄到第 7 欄，含 SheetID)
       var lastRow = sheet.getLastRow();
@@ -316,6 +352,45 @@ function doPost(e) {
   } catch (error) {
     return createResponse({ status: "error", message: error.toString() });
   }
+}
+
+function scanStudentFiles() {
+  var memberSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('LINE LIFF member');
+  if (!memberSheet) throw new Error('找不到 LINE LIFF member 工作表');
+  var byId = Object.create(null);
+  if (memberSheet.getLastRow() >= 2) {
+    memberSheet.getRange(2, 1, memberSheet.getLastRow() - 1, 7).getValues().forEach(function (row) {
+      var name = String(row[1] || '').trim();
+      var classroom = row[3] || 'I';
+      var id = String(row[6] || '').trim();
+      if (!name || (classroom !== 'I' && classroom !== 'J')) return;
+      if (id) byId[id] = { name: name, classroom: classroom, sheetId: id };
+    });
+  }
+  function scanFolder(folder, classroom, recursive) {
+    var files = folder.getFilesByType(MimeType.GOOGLE_SHEETS);
+    while (files.hasNext()) {
+      var file = files.next();
+      var id = file.getId();
+      var filename = file.getName();
+      if (byId[id] || /範本|模板|template/i.test(filename)) continue;
+      // 接受「代號_姓名_上課紀錄」與「_姓名」，避免將一般試算表當學生。
+      var match = filename.match(/^(?:[^_]*_)([^_]+?)(?:_上課紀錄.*)?$/);
+      if (!match) continue;
+      var name = match[1].trim();
+      if (!name || /上課紀錄|繳費紀錄/.test(name)) continue;
+      byId[id] = { name: name, classroom: classroom, sheetId: id };
+    }
+    if (recursive) {
+      var folders = folder.getFolders();
+      while (folders.hasNext()) scanFolder(folders.next(), classroom, true);
+    }
+  }
+  scanFolder(DriveApp.getFolderById('1A4SOGVwZCG77rA8lXfGaT1pHXoeJ7n8z'), 'I', true);
+  scanFolder(DriveApp.getFolderById('1mYCVAVWSjn_b0T1yOnF96KakJ5jeQJqU'), 'J', false);
+  return Object.keys(byId).map(function (id) { return byId[id]; }).sort(function (a, b) {
+    return a.classroom.localeCompare(b.classroom) || a.name.localeCompare(b.name, 'zh-Hant') || a.sheetId.localeCompare(b.sheetId);
+  });
 }
 
 function createResponse(payload) {
