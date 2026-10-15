@@ -115,6 +115,7 @@ function renderAdminStudentList() {
         card.type = 'button';
         card.className = 'admin-student-card';
         if (student.classroom === 'J') card.classList.add('classroom-j');
+        if (student.classroom === 'I') card.classList.add('classroom-i');
         card.textContent = student.name;
         const classroom = document.createElement('small');
         classroom.textContent = student.classroom === 'J' ? 'Jeff Coding' : 'Im未來';

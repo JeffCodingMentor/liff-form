@@ -383,7 +383,7 @@ function scanStudentFiles() {
   }
   function scanFolder(folder, classroom, recursive, parentOrder) {
     if (/試聽紀錄|template/i.test(folder.getName())) return;
-    var folderPrefix = folder.getName().match(/^(\d+)/);
+    var folderPrefix = folder.getName().match(/^[a-z]*(\d+)/i);
     var folderOrder = folderPrefix ? Number(folderPrefix[1]) : parentOrder;
     var files = folder.getFilesByType(MimeType.GOOGLE_SHEETS);
     while (files.hasNext()) {
@@ -391,7 +391,7 @@ function scanStudentFiles() {
       var id = file.getId();
       var filename = file.getName();
       if (/範本|模板|template/i.test(filename)) continue;
-      var filePrefix = filename.match(/^(\d+)/);
+      var filePrefix = filename.match(/^[a-z]*(\d+)/i);
       orderById[id] = filePrefix ? Number(filePrefix[1]) : folderOrder;
       if (byId[id]) continue;
       // 接受「代號_姓名_上課紀錄」與「_姓名」，避免將一般試算表當學生。

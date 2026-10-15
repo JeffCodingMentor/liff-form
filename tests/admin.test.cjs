@@ -140,6 +140,33 @@ test('roster sorts by classroom, numeric file or folder prefix, then Chinese nam
     assert.deepEqual(b.call({ ...request, refresh: true }).students, result.students);
 });
 
+test('alphanumeric prefixes sort numerically in files and folders and preserve exact student names', () => {
+    const b = backend([], {
+        I: folder([], [
+            folder([file('I04', '_小明')], [], 'I04_學生'),
+            folder([file('I01', '_麗華')], [], 'I01_學生'),
+            folder([file('I03', '_大華')], [], 'i03_學生'),
+            folder([file('I05', '_一明')], [], 'I05_學生')
+        ]),
+        J: folder([
+            file('J04', 'J04_小明_上課紀錄'), file('J01', 'J01_小明'),
+            file('J05', 'J05_一明'), file('J03', 'J03_大華_上課紀錄'),
+            file('numeric', '002_二明'), file('J10', 'j10_十明'), file('none', '_無編號')
+        ])
+    });
+    b.sheets['LINE LIFF member'].rows.splice(1);
+    const request = { action: 'get_students', userId: 'admin' };
+    const result = b.call(request);
+    assert.equal(result.status, 'success', result.message);
+    assert.deepEqual(result.students.map(s => s.sheetId), [
+        'I01', 'I03', 'I04', 'I05', 'J01', 'numeric', 'J03', 'J04', 'J05', 'J10', 'none'
+    ]);
+    assert.deepEqual(result.students.filter(s => /^J0/.test(s.sheetId)).map(s => [s.sheetId, s.name]), [
+        ['J01', '小明'], ['J03', '大華'], ['J04', '小明'], ['J05', '一明']
+    ]);
+    assert.deepEqual(b.call(request).students, result.students);
+});
+
 function frontend() {
     const elements = {};
     function element() {
@@ -179,7 +206,9 @@ test('admin login, classroom filter, live search, refresh, theme and back with s
     assert.equal(e.adminArea.style.display, 'block');
     assert.equal(e.adminStudentList.children.length, 2);
     assert.equal(e.adminStudentList.children[0].classList.contains('classroom-j'), false);
+    assert.equal(e.adminStudentList.children[0].classList.contains('classroom-i'), true);
     assert.equal(e.adminStudentList.children[1].classList.contains('classroom-j'), true);
+    assert.equal(e.adminStudentList.children[1].classList.contains('classroom-i'), false);
     f.filters[2].fire('click');
     assert.equal(e.adminStudentList.children.length, 1);
     assert.equal(e.adminStudentList.children[0].classList.contains('classroom-j'), true);
@@ -263,4 +292,10 @@ test('all and Im classroom filters use amber and green in both selection states'
         assert.ok(rule.includes(`color: ${color};`), selector);
         assert.ok(rule.includes(`border: 1px solid ${border};`), selector);
     }
+});
+
+test('Im student card and classroom label both use green text', () => {
+    const html = source('index.html');
+    assert.match(html, /\.admin-student-card\.classroom-i\s*\{[^}]*color:\s*#137333\s*;/);
+    assert.match(html, /\.admin-student-card\.classroom-i small\s*\{[^}]*color:\s*#137333\s*;/);
 });
