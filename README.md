@@ -103,12 +103,18 @@ sequenceDiagram
 ### 管理員設定與操作
 
 1. 在 GAS「專案設定 → 指令碼屬性」新增 `ADMIN_USER_ID`，填入管理員的 LINE userId（登入時可在瀏覽器 Console 的 `LINE userId:` 訊息取得）。請勿把此設定值提交至版本庫。
-2. 確認主試算表的登錄分頁名稱為 `LINE LIFF member`，執行 GAS 的帳號可讀取教室 I、J 資料夾並編輯主試算表；更新 GAS 網頁應用程式部署與前端後即可使用。
-3. 管理員登入會進入「管理員控制台」，可依全部／Im未來／Jeff Coding 篩選與即時搜尋姓名。點選學生可檢視月曆、上課及繳費紀錄，並套用該教室主題；「⬅️ 返回學生選單」保留搜尋條件，方便切換學生。
-4. 首次取得名冊會自動建立 `學生名冊快取` 分頁，欄位為「學生姓名、所屬教室、檔案ID、更新時間」。掃描先採用已註冊學生的精確檔案對照，再合併教室 I（含子資料夾）、教室 J 的 Google 試算表，排除範本並依檔案 ID 去重，保留同名但不同檔案的學生。
-5. 快取永不自動過期；新增、移動或更名學生檔案後，請按「🔄 重新整理名單」。掃描成功才覆寫舊資料，掃描失敗時保留原快取並顯示重試訊息。空名冊下次載入仍會重新掃描。
+2. 確認主試算表的登錄分頁名稱為 `LINE LIFF member`（或預設之第一分頁），執行 GAS 的帳號可讀取教室 I、J 資料夾並編輯主試算表。
+3. 管理員登入後會直接進入學生選單介面：
+   - 頂部直接呈現學生人數統計與篩選器（全部：琥珀色系、Im未來：綠色系、Jeff Coding：藍色系）。
+   - 學生卡片直觀標示：Jeff Coding 學生為藍底樣式，Im未來 學生為綠色系字型。
+   - 點選學生可檢視月曆、上課及繳費紀錄，並套用該教室主題；頂部提供「⬅️ 返回學生選單」按鈕，且保留原搜尋與篩選狀態。
+4. 首次取得名冊會自動建立 `學生名冊快取` 分頁，欄位為「學生姓名、所屬教室、檔案ID、更新時間」：
+   - 掃描先採用已註冊學生的精確檔案對照，再合併教室 I（含子資料夾）、教室 J 的 Google 試算表。
+   - **嚴格排除目錄**：排除「`紀錄表-Im\試聽紀錄`」與「`紀錄表-Im\Template`」目錄及其所有子檔案。
+   - **排序規則**：Im未來 (`I`) 學生在前、Jeff Coding (`J`) 學生在後；同教室內依照檔名或資料夾前綴編號中的純數字（支援純數字與英數前綴如 `J01, J03, J04, J05`）由小到大排序；無編號者排最後；相同編號依中文姓名筆劃排序。
+5. 快取永不自動過期；新增、移動或更名學生檔案後，請按「🔄 重新整理名單」。掃描成功才覆寫舊資料，掃描失敗時保留原快取並顯示重試訊息。
 
-權限比對沿用既有前端傳入的 LINE userId，並未新增 LINE token 伺服器驗證；既有 `get_records` 的存取模型也維持原狀。若需防止偽造請求，仍須另行設計並驗證 LINE token。快取可避免重掃 Drive，但實際端到端回應時間須於部署環境量測。
+權限比對沿用既有前端傳入的 LINE userId，並未新增 LINE token 伺服器驗證；既有 `get_records` 的存取模型也維持原狀。
 
 本機回歸測試：執行 `node --test tests/admin.test.cjs`，以模擬 GAS／DOM 驗證權限、掃描、快取及管理員與一般學生流程；不會連線或修改正式 Google 資料。
 
@@ -148,6 +154,12 @@ sequenceDiagram
      git commit -m "更新說明"
      git push origin main
      ```
-2. **Google Apps Script 部署**
-   * 方式一：開啟 [LINE LIFF member 試算表](https://docs.google.com/spreadsheets/d/1uufBWRzlxPNJKZbjo4yE-TJD3LWqxHIJj1zQg5__xq4/edit)，點擊 **擴充功能 ➔ Apps Script** 直接編輯並「發布為新版本網路應用程式」。
-   * 方式二：使用專案內建的 `@google/clasp` 工具於本地進行拉取與推送部署。
+2. **Google Apps Script 部署（覆蓋現有 Deployment ID，保持網址固定）**
+   * 本專案統一使用覆蓋更新既有 Deployment ID 的方式部署，**毋須頻繁更換 Web App 網址**，Netlify 亦不需重複設定環境變數：
+     ```powershell
+     # 1. 強制推送最新程式碼至 GAS 專案
+     npx @google/clasp push -f
+
+     # 2. 更新既有的正式部署版本（網址維持不變）
+     npx @google/clasp deploy -i AKfycbwMpcyo_8KVlHKUdHkSutk4KMjm-Y-IIy-jgLJoCJDEv7wrdsiZv2uqNHFvik1qXIoPNQ --description "更新說明"
+     ```
