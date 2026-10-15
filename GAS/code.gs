@@ -371,6 +371,7 @@ function scanStudentFiles() {
   var memberSheet = getMemberSheet(spreadsheet);
   if (!memberSheet) throw new Error('找不到學生登錄工作表');
   var byId = Object.create(null);
+  var orderById = Object.create(null);
   if (memberSheet.getLastRow() >= 2) {
     memberSheet.getRange(2, 1, memberSheet.getLastRow() - 1, 7).getValues().forEach(function (row) {
       var name = String(row[1] || '').trim();
@@ -380,14 +381,19 @@ function scanStudentFiles() {
       if (id) byId[id] = { name: name, classroom: classroom, sheetId: id };
     });
   }
-  function scanFolder(folder, classroom, recursive) {
+  function scanFolder(folder, classroom, recursive, parentOrder) {
     if (/試聽紀錄|template/i.test(folder.getName())) return;
+    var folderPrefix = folder.getName().match(/^(\d+)/);
+    var folderOrder = folderPrefix ? Number(folderPrefix[1]) : parentOrder;
     var files = folder.getFilesByType(MimeType.GOOGLE_SHEETS);
     while (files.hasNext()) {
       var file = files.next();
       var id = file.getId();
       var filename = file.getName();
-      if (byId[id] || /範本|模板|template/i.test(filename)) continue;
+      if (/範本|模板|template/i.test(filename)) continue;
+      var filePrefix = filename.match(/^(\d+)/);
+      orderById[id] = filePrefix ? Number(filePrefix[1]) : folderOrder;
+      if (byId[id]) continue;
       // 接受「代號_姓名_上課紀錄」與「_姓名」，避免將一般試算表當學生。
       var match = filename.match(/^(?:[^_]*_)([^_]+?)(?:_上課紀錄.*)?$/);
       if (!match) continue;
@@ -397,13 +403,15 @@ function scanStudentFiles() {
     }
     if (recursive) {
       var folders = folder.getFolders();
-      while (folders.hasNext()) scanFolder(folders.next(), classroom, true);
+      while (folders.hasNext()) scanFolder(folders.next(), classroom, true, folderOrder);
     }
   }
   scanFolder(DriveApp.getFolderById('1A4SOGVwZCG77rA8lXfGaT1pHXoeJ7n8z'), 'I', true);
   scanFolder(DriveApp.getFolderById('1mYCVAVWSjn_b0T1yOnF96KakJ5jeQJqU'), 'J', false);
   return Object.keys(byId).map(function (id) { return byId[id]; }).sort(function (a, b) {
-    return a.classroom.localeCompare(b.classroom) || a.name.localeCompare(b.name, 'zh-Hant') || a.sheetId.localeCompare(b.sheetId);
+    var orderA = orderById[a.sheetId] === undefined ? Infinity : orderById[a.sheetId];
+    var orderB = orderById[b.sheetId] === undefined ? Infinity : orderById[b.sheetId];
+    return a.classroom.localeCompare(b.classroom) || (orderA - orderB) || a.name.localeCompare(b.name, 'zh-Hant') || a.sheetId.localeCompare(b.sheetId);
   });
 }
 

@@ -62,16 +62,32 @@
 - [x] 更新 `README.md`，說明管理員功能、GAS 指令碼屬性設定與 Google Sheet 學生名冊快取機制。
 
 ### Task 5: 介面與掃描優化需求 (Update)
-- [ ] **5.1 排除特定目錄 (`GAS/code.gs`)**：
+- [x] **5.1 排除特定目錄 (`GAS/code.gs`)**：
   - 掃描教室 I 時，嚴格排除目錄名稱包含 `試聽紀錄` 或 `Template` 的資料夾及其下檔案。
-- [ ] **5.2 簡化管理員選單介面 (`index.html` / `script.js`)**：
+- [x] **5.2 簡化管理員選單介面 (`index.html` / `script.js`)**：
   - 移除 `#adminArea` 最上方的「管理員控制台」標題。
   - 移除 `#adminArea` 最下方的「關閉系統」按鈕，並自 `script.js` 移除其事件監聽。
-- [ ] **5.3 Jeff Coding 藍色主題強化 (`index.html` / `script.js`)**：
+- [x] **5.3 Jeff Coding 藍色主題強化 (`index.html` / `script.js`)**：
   - Jeff Coding 學生卡片改以藍色底顯示（`#e7f3ff` 背景、`#b8daff` 邊框、`#004085` 文字）。
   - Jeff Coding 教室篩選按鈕 (`button[data-classroom="J"]`) 預設與選取皆套用藍色風格。
-- [ ] **5.4 測試更新 (`tests/admin.test.cjs`)**：
+- [x] **5.4 測試更新 (`tests/admin.test.cjs`)**：
   - 更新測試涵蓋排除 `試聽紀錄` 與 `Template` 目錄，驗證 Jeff Coding 藍底樣式與按鈕調整。
+
+### Task 6: 排序優化與按鈕色系調整 (Update 2)
+- [ ] **6.1 檔名前綴數字排序 (`GAS/code.gs`)**：
+  - 解析檔名（或資料夾名）開頭之數字編號（例如 `001_小明`、`12_大華`）。
+  - 排序邏輯：Im未來 (`I`) 在前、Jeff Coding (`J`) 在後；同教室內依照數字編號由小到大排序；無編號者排最後；相同編號者依中文姓名筆劃排序。
+- [ ] **6.2 篩選按鈕色彩調整 (`index.html`)**：
+  - 「全部」按鈕（`data-classroom="all"`）改為黃色/琥珀系：
+    - `aria-pressed="true"`：背景琥珀色（`#d97706`），文字白色。
+    - `aria-pressed="false"`：背景淡琥珀色（`#fef3c7`），文字 `#92400e`，邊框 `#fcd34d`。
+  - 「Im未來」按鈕（`data-classroom="I"`）未按下時改為綠色系：
+    - `aria-pressed="false"`：背景淡綠色（`#e6f4ea`），文字 `#137333`，邊框 `#c8e6c9`。
+    - `aria-pressed="true"`：保持主題綠（`#00b900`），文字白色。
+- [ ] **6.3 更新測試 (`tests/admin.test.cjs`)**：
+  - 加入數字編號排序案例（測試包含 `001_`、`002_`、`10_` 等編號學生跨教室與同教室排序）。
+  - 加入按鈕色彩樣式檢驗。
+  - 執行並確保全部測試通過。
 
 ---
 

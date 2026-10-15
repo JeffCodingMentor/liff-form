@@ -20,7 +20,7 @@ class Sheet {
 const iterator = values => { let i = 0; return { hasNext: () => i < values.length, next: () => values[i++] }; };
 const file = (id, name) => ({ getId: () => id, getName: () => name });
 const folder = (files, children = [], name = '學生紀錄') => ({ getName: () => name, getFilesByType: () => iterator(files), getFolders: () => iterator(children) });
-function backend(excludedFolders = []) {
+function backend(excludedFolders = [], roots) {
     const sheets = { 'LINE LIFF member': new Sheet([
         ['時間', '姓名', '生日', '教室', '顯示名稱', 'LINE ID', 'SheetID'],
         ['', '精確姓名', '', 'J', '', 'student', 'registered'],
@@ -44,6 +44,7 @@ function backend(excludedFolders = []) {
         DriveApp: { getFolderById: id => {
             scans++;
             if (failScan) throw new Error('Drive unavailable');
+            if (roots) return roots[id.startsWith('1A4') ? 'I' : 'J'];
             return id.startsWith('1A4') ? folder([file('registered', '001_錯誤姓名_上課紀錄'), file('skip', '學生範本'), file('misc', '行政報表')],
                 [folder([file('new', '002_小明_上課紀錄'), file('old', '_舊生')], excludedFolders)]) : folder([file('other', '_小明')]);
         } }
@@ -72,7 +73,7 @@ test('scan merges exact registered IDs, nested I and J files; cache is reused an
     const first = b.call(request);
     assert.equal(first.status, 'success');
     assert.deepEqual(first.students.map(s => [s.name, s.classroom, s.sheetId]), [
-        ['小明', 'I', 'new'], ['舊生', 'I', 'old'], ['小明', 'J', 'other'], ['精確姓名', 'J', 'registered']
+        ['小明', 'I', 'new'], ['舊生', 'I', 'old'], ['精確姓名', 'J', 'registered'], ['小明', 'J', 'other']
     ]);
     assert.equal(b.sheets['學生名冊快取'].rows[0][0], '學生姓名');
     assert.equal(Object.prototype.toString.call(b.sheets['學生名冊快取'].rows[1][3]), '[object Date]');
@@ -108,6 +109,35 @@ test('scan skips trial and template folders before reading files or descendants'
         assert.equal(result.status, 'success', result.message);
         assert.deepEqual(result.students.map(s => s.sheetId).sort(), ['new', 'old', 'other', 'registered']);
     }
+});
+
+test('roster sorts by classroom, numeric file or folder prefix, then Chinese name and preserves cached order', () => {
+    const b = backend([], {
+        I: folder([
+            file('ten', '10_十號'), file('two-lin', '002_林明'),
+            file('none-lin', '_林華'), file('one', '001_一號'),
+            file('two-wang', '2_王明'), file('zero', '000_零號'),
+            file('none-wang', '_王華'), file('registered', '12_錯誤姓名')
+        ], [folder([file('folder-three', '_三號'), file('file-five', '5_五號')], [
+            folder([file('inherited-three', '_三號子表')]),
+            folder([file('folder-four', '_四號')], [], '004_學生')
+        ], '003_學生')]),
+        J: folder([file('j-ten', '10_十號'), file('j-one', '001_一號'), file('j-none', '_無編號')])
+    });
+    const request = { action: 'get_students', userId: 'admin' };
+    const result = b.call(request);
+    assert.equal(result.status, 'success', result.message);
+    assert.deepEqual(result.students.map(s => s.sheetId), [
+        'zero', 'one', 'two-wang', 'two-lin', 'folder-three', 'inherited-three',
+        'folder-four', 'file-five', 'ten', 'none-wang', 'none-lin',
+        'j-one', 'j-ten', 'registered', 'j-none'
+    ]);
+    assert.deepEqual(result.students.find(s => s.sheetId === 'registered'), {
+        name: '精確姓名', classroom: 'J', sheetId: 'registered'
+    });
+    assert.deepEqual(b.call(request).students, result.students);
+    assert.equal(b.scans(), 2);
+    assert.deepEqual(b.call({ ...request, refresh: true }).students, result.students);
 });
 
 function frontend() {
@@ -216,4 +246,21 @@ test('admin menu is simplified and Jeff Coding cards and filter use blue styles'
     assert.match(cardStyle, /color:\s*#004085/);
     assert.match(html, /\.admin-filters button\[data-classroom="J"\]\[aria-pressed="false"\]\s*\{[^}]*background:\s*#e7f3ff/);
     assert.match(html, /\.admin-filters button\[data-classroom="J"\]\[aria-pressed="true"\]\s*\{[^}]*background:\s*#007bff/);
+});
+
+test('all and Im classroom filters use amber and green in both selection states', () => {
+    const html = source('index.html');
+    for (const [classroom, pressed, background, color, border] of [
+        ['all', 'true', '#d97706', '#fff', '#d97706'],
+        ['all', 'false', '#fef3c7', '#92400e', '#fcd34d'],
+        ['I', 'true', '#00b900', '#fff', '#00b900'],
+        ['I', 'false', '#e6f4ea', '#137333', '#c8e6c9']
+    ]) {
+        const selector = `.admin-filters button[data-classroom="${classroom}"][aria-pressed="${pressed}"]`;
+        const rule = html.split(selector)[1]?.split('}')[0];
+        assert.ok(rule, `missing ${selector}`);
+        assert.ok(rule.includes(`background: ${background};`), selector);
+        assert.ok(rule.includes(`color: ${color};`), selector);
+        assert.ok(rule.includes(`border: 1px solid ${border};`), selector);
+    }
 });
